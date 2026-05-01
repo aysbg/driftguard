@@ -1,0 +1,12 @@
+openapi: 3.0.3
+info:
+  title: Invalid Spec
+  version: 1.0.0
+paths:
+  /broken:
+    get:
+      operationId: brokenEndpoint
+      summary: This is broken
+      responses:
+        '200'
+          description: Missing colon

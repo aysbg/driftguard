@@ -1,0 +1,12 @@
+openapi: 3.0.3
+info:
+  title: Override Spec API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: listUsers
+      summary: List users from override spec
+      responses:
+        '200':
+          description: User list

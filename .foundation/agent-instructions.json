@@ -1,0 +1,77 @@
+{
+  "saved_at": "2026-05-01T11:16:31.877Z",
+  "agent_instructions": {
+    "version": "1.0.0",
+    "generated_at": "2026-05-01T11:16:31.771435+00:00",
+    "prd_id": "prd-1d60fac82360",
+    "workflow": {
+      "steps": [
+        {
+          "order": 1,
+          "name": "get_prd_context",
+          "description": "Load key PRD/TDD sections before starting implementation.",
+          "actions": [
+            "call foundation_menu",
+            "call foundation_context"
+          ]
+        },
+        {
+          "order": 2,
+          "name": "fetch_tasks",
+          "description": "Retrieve available work and choose the highest-priority match.",
+          "actions": [
+            "call foundation_fetch"
+          ]
+        },
+        {
+          "order": 3,
+          "name": "claim_task",
+          "description": "Claim one task before making changes.",
+          "actions": [
+            "call foundation_claim"
+          ]
+        },
+        {
+          "order": 4,
+          "name": "report_progress",
+          "description": "Send progress checkpoints as implementation advances.",
+          "actions": [
+            "call foundation_report_progress"
+          ]
+        },
+        {
+          "order": 5,
+          "name": "leave_comments",
+          "description": "Record updates, blockers, and final outcomes.",
+          "actions": [
+            "call foundation_comment"
+          ]
+        }
+      ]
+    },
+    "context_strategy": {
+      "priority_sections": [
+        "prd.assumptions",
+        "prd.background",
+        "prd.epics",
+        "prd.out_of_scope",
+        "tdd.system_overview",
+        "tdd.tech_stack_decisions"
+      ]
+    },
+    "reporting": {
+      "when_to_report": [
+        "after_claim",
+        "at_each_major_milestone",
+        "when_blocked",
+        "on_completion"
+      ],
+      "what_to_include": [
+        "current_step",
+        "progress_percent",
+        "decisions_made",
+        "blockers_and_dependencies"
+      ]
+    }
+  }
+}

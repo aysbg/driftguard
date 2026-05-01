@@ -1,0 +1,51 @@
+openapi: 3.0.3
+info:
+  title: User API
+  version: 1.0.0
+  description: API for managing users in the system
+paths:
+  /users/{id}:
+    get:
+      operationId: getUserById
+      summary: Get user by ID
+      description: Retrieve a single user by their unique identifier with optional field filtering
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The unique identifier of the user
+          schema:
+            type: string
+        - name: fields
+          in: query
+          required: false
+          description: Comma-separated list of fields to include in response
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User found and returned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: The user's unique identifier
+                  name:
+                    type: string
+                    description: The user's full name
+                  email:
+                    type: string
+                    description: The user's email address
+        '404':
+          description: User not found - the specified ID does not correspond to an existing user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message describing why the lookup failed

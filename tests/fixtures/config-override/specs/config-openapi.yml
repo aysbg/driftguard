@@ -1,0 +1,12 @@
+openapi: 3.0.3
+info:
+  title: Config Spec API
+  version: 1.0.0
+paths:
+  /accounts:
+    get:
+      operationId: listAccounts
+      summary: List accounts from config spec
+      responses:
+        '200':
+          description: Account list

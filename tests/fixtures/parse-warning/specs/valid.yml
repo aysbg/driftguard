@@ -1,0 +1,12 @@
+openapi: 3.0.3
+info:
+  title: Parse Warning API
+  version: 1.0.0
+paths:
+  /products:
+    get:
+      operationId: listProducts
+      summary: List products
+      responses:
+        '200':
+          description: Product list

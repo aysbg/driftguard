@@ -1,0 +1,6 @@
+spec:
+  - specs/config-openapi.yml
+code:
+  - src
+output:
+  json: drift-report.json
