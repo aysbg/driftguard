@@ -15,7 +15,7 @@ export async function runScan(input: ScanInput): Promise<ScanResult> {
   const { runRuleEngine } = await import('../rules/engine.js');
 
   const spec: UnifiedSpecIR = await ingestSpecs({ repo: input.repo, spec: input.spec });
-  const repositoryResult: RepositoryIndexResult = await indexRepository({ repo: input.repo, code: input.code });
+  const repositoryResult: RepositoryIndexResult = await indexRepository({ repo: input.repo, code: input.code, changedFiles: input.changedFiles });
 
   const usableDocs = spec.documents.filter((d) => d.operations.length > 0 || d.sections.length > 0);
   if (usableDocs.length === 0) {

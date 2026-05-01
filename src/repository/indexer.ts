@@ -15,9 +15,9 @@ export interface RepositoryIndexResult {
   warnings: ParseWarning[];
 }
 
-export async function indexRepository(input: Pick<ScanInput, 'repo' | 'code'>): Promise<RepositoryIndexResult> {
+export async function indexRepository(input: Pick<ScanInput, 'repo' | 'code'> & { changedFiles?: string[] }): Promise<RepositoryIndexResult> {
   const project = new Project({ skipAddingFilesFromTsConfig: true });
-  const codeFiles = await discoverCodeFiles(input.code);
+  const codeFiles = await discoverCodeFiles(input.code, input.repo, input.changedFiles);
 
   return {
     index: {
@@ -34,15 +34,16 @@ export async function indexRepository(input: Pick<ScanInput, 'repo' | 'code'>): 
   };
 }
 
-async function discoverCodeFiles(codePaths: string[]): Promise<string[]> {
+async function discoverCodeFiles(codePaths: string[], repo: string, changedFiles?: string[]): Promise<string[]> {
   const filePaths = new Set<string>();
+  const changedSet = changedFiles ? new Set(changedFiles) : undefined;
 
   for (const codePath of codePaths) {
     const stats = await stat(codePath);
 
     if (stats.isFile()) {
       if (SUPPORTED_CODE_FILE_EXTENSIONS.has(extname(codePath))) {
-        filePaths.add(codePath);
+        addFile(filePaths, codePath, repo, changedSet);
       }
 
       continue;
@@ -56,11 +57,19 @@ async function discoverCodeFiles(codePaths: string[]): Promise<string[]> {
     });
 
     for (const match of matches) {
-      filePaths.add(match);
+      addFile(filePaths, match, repo, changedSet);
     }
   }
 
   return [...filePaths].sort((left, right) => left.localeCompare(right));
+}
+
+function addFile(filePaths: Set<string>, path: string, repo: string, changedSet?: Set<string>): void {
+  if (changedSet) {
+    const rel = toRelativeFilePath(repo, path);
+    if (!changedSet.has(rel)) return;
+  }
+  filePaths.add(path);
 }
 
 function toRelativeFilePath(repoRoot: string, filePath: string): string {

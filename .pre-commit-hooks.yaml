@@ -1,0 +1,17 @@
+# pre-commit.com hook for DriftGuard
+#
+# Add to your `.pre-commit-config.yaml`:
+#
+#   repos:
+#     - repo: https://github.com/your-org/driftguard
+#       rev: v1.0.0
+#       hooks:
+#         - id: driftguard
+#
+- id: driftguard
+  name: DriftGuard spec-to-code drift scan
+  entry: npx driftguard scan --ci
+  language: node
+  types_or: [ts, js, jsx, tsx]
+  pass_filenames: false
+  always_run: false

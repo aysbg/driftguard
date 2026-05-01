@@ -1,0 +1,126 @@
+# Reusable GitHub Actions workflow for DriftGuard drift detection.
+#
+# Usage in your workflow:
+#   jobs:
+#     drift:
+#       uses: your-org/driftguard/.github/workflows/driftguard.yml@main
+#       with:
+#         repo: .
+#         spec: docs
+#         code: src
+#         fail-on: high,medium
+#
+# The job will fail (exit 1) when drift is found that meets the threshold.
+
+on:
+  workflow_call:
+    inputs:
+      repo:
+        description: 'Repository path to scan'
+        type: string
+        required: false
+        default: '.'
+      spec:
+        description: 'Spec directory or files (repeatable with commas)'
+        type: string
+        required: false
+        default: 'docs'
+      code:
+        description: 'Code directory or files (repeatable with commas)'
+        type: string
+        required: false
+        default: 'src'
+      fail-on:
+        description: 'Severity levels to fail on (comma-separated)'
+        type: string
+        required: false
+        default: 'high,medium'
+      changed-only:
+        description: 'Only scan changed files'
+        type: boolean
+        required: false
+        default: false
+      base-ref:
+        description: 'Git base ref to diff against for changed-only scans'
+        type: string
+        required: false
+        default: 'origin/main'
+      sarif:
+        description: 'Path to write SARIF output file'
+        type: string
+        required: false
+      node-version:
+        description: 'Node.js version to use'
+        type: string
+        required: false
+        default: '22'
+    outputs:
+      sarif-path:
+        description: 'Path to the generated SARIF file'
+        value: ${{ jobs.drift.outputs.sarif-path }}
+      exit-code:
+        description: 'Exit code from driftguard'
+        value: ${{ jobs.drift.outputs.exit-code }}
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    outputs:
+      sarif-path: ${{ steps.run.outputs.sarif-path }}
+      exit-code: ${{ steps.run.outputs.exit-code }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Install driftguard
+        run: npm install --global driftguard || npm install driftguard
+
+      - name: Run DriftGuard scan
+        id: run
+        run: |
+          ARGS="--repo ${{ inputs.repo }} --ci"
+
+          IFS=',' read -ra SPEC_PARTS <<< "${{ inputs.spec }}"
+          for s in "${SPEC_PARTS[@]}"; do ARGS="$ARGS --spec $s"; done
+
+          IFS=',' read -ra CODE_PARTS <<< "${{ inputs.code }}"
+          for c in "${CODE_PARTS[@]}"; do ARGS="$ARGS --code $c"; done
+
+          ARGS="$ARGS --fail-on ${{ inputs.fail-on }}"
+
+          if [ "${{ inputs.changed-only }}" = "true" ]; then
+            ARGS="$ARGS --changed-only --base-ref ${{ inputs.base-ref }}"
+          fi
+
+          if [ -n "${{ inputs.sarif }}" ]; then
+            ARGS="$ARGS --sarif ${{ inputs.sarif }}"
+            echo "sarif-path=${{ inputs.sarif }}" >> "$GITHUB_OUTPUT"
+          fi
+
+          set +e
+          if command -v npx >/dev/null 2>&1; then
+            npx driftguard scan $ARGS
+          else
+            driftguard scan $ARGS
+          fi
+          EXIT=$?
+          set -e
+          echo "exit-code=$EXIT" >> "$GITHUB_OUTPUT"
+          exit $EXIT
+
+      - name: Upload SARIF to GitHub Code Scanning
+        if: ${{ inputs.sarif != '' }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ inputs.sarif }}

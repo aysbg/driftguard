@@ -65,7 +65,8 @@ export interface SectionMapping {
   confidence: MappingConfidence;
 }
 
-export type FindingSeverity = 'high' | 'medium' | 'low';
+export const findingSeveritySchema = z.enum(['high', 'medium', 'low']);
+export type FindingSeverity = z.infer<typeof findingSeveritySchema>;
 export type FindingConfidence = 'high' | 'medium' | 'low';
 
 export const driftFindingSchema = z.object({

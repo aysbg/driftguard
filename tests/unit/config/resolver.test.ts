@@ -116,4 +116,66 @@ describe('resolveConfig', () => {
     });
     expect((error as Error).message).toContain('glob');
   });
+
+  it('resolves CI config from .driftguard.yml', async () => {
+    const repo = createTempRepo(
+      'spec:\n  - docs\ncode:\n  - src\nci:\n  failOn:\n    - high\n  changedOnly: true\n  baseRef: main\n  sarif: results.sarif\n',
+    );
+
+    const resolvedConfig = await resolveConfig({ repo });
+
+    expect(resolvedConfig.ci).toEqual({
+      failOn: ['high'],
+      changedOnly: true,
+      baseRef: 'main',
+      sarif: 'results.sarif',
+    });
+  });
+
+  it('resolves CI config with string failOn', async () => {
+    const repo = createTempRepo(
+      'spec:\n  - docs\ncode:\n  - src\nci:\n  failOn: high,medium\n',
+    );
+
+    const resolvedConfig = await resolveConfig({ repo });
+
+    expect(resolvedConfig.ci).toEqual({
+      failOn: ['high', 'medium'],
+    });
+  });
+
+  it('rejects invalid failOn severity in config', async () => {
+    const repo = createTempRepo(
+      'spec:\n  - docs\ncode:\n  - src\nci:\n  failOn:\n    - critical\n',
+    );
+
+    const error = await resolveConfig({ repo }).catch((reason: unknown) => reason);
+
+    expect(error).toBeInstanceOf(DriftGuardError);
+    expect(error).toMatchObject({
+      exitCode: ExitCode.ExecutionError,
+    });
+    expect((error as Error).message).toContain('critical');
+    expect((error as Error).message).toContain('high, medium, low');
+  });
+
+  it('rejects uppercase failOn severity with suggestion', async () => {
+    const repo = createTempRepo(
+      'spec:\n  - docs\ncode:\n  - src\nci:\n  failOn:\n    - HIGH\n',
+    );
+
+    const error = await resolveConfig({ repo }).catch((reason: unknown) => reason);
+
+    expect(error).toBeInstanceOf(DriftGuardError);
+    expect((error as Error).message).toContain('HIGH');
+    expect((error as Error).message).toContain('high');
+  });
+
+  it('resolves CI config without CI section', async () => {
+    const repo = createTempRepo('spec:\n  - docs\ncode:\n  - src\n');
+
+    const resolvedConfig = await resolveConfig({ repo });
+
+    expect(resolvedConfig.ci).toBeUndefined();
+  });
 });

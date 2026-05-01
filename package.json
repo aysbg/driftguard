@@ -24,6 +24,7 @@
     "picocolors": "^1.1.1",
     "remark-gfm": "^4.0.0",
     "remark-parse": "^11.0.0",
+    "simple-git": "^3.36.0",
     "ts-morph": "^25.0.0",
     "unified": "^11.0.5",
     "yaml": "^2.6.1",

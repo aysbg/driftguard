@@ -5,10 +5,11 @@ import { parse } from 'yaml';
 import { z } from 'zod';
 
 import { DriftGuardError, ExitCode } from '../errors.js';
-import type { ResolvedConfig } from '../types/config.js';
+import type { ResolvedConfig, FindingSeverity } from '../types/config.js';
 
 const DEFAULT_SPEC_PATHS = ['docs'];
 const DEFAULT_CODE_PATHS = ['src'];
+const VALID_SEVERITIES: readonly FindingSeverity[] = ['high', 'medium', 'low'];
 
 const configSchema = z
   .object({
@@ -16,6 +17,12 @@ const configSchema = z
     code: z.array(z.string()).optional(),
     output: z.object({ json: z.string().optional() }).optional(),
     report: z.object({ format: z.string().optional() }).optional(),
+    ci: z.object({
+      failOn: z.union([z.string(), z.array(z.string())]).optional(),
+      changedOnly: z.boolean().optional(),
+      baseRef: z.string().optional(),
+      sarif: z.string().optional(),
+    }).optional(),
   })
   .passthrough();
 
@@ -57,11 +64,14 @@ export async function resolveConfig(
     ? normalizePaths(options.code, repo)
     : (configCode ?? normalizePaths(DEFAULT_CODE_PATHS, repo));
 
+  const ci = fileConfig?.ci ? parseCiConfig(fileConfig.ci) : undefined;
+
   return {
     repo,
     spec,
     code,
     configFile,
+    ci,
   };
 }
 
@@ -140,4 +150,54 @@ function toConfigError(
     `config file is unreadable: ${configPath} (${message})`,
     ExitCode.ExecutionError,
   );
+}
+
+export function parseFailOn(value: string): FindingSeverity[] {
+  if (value.trim() === '') {
+    throw new DriftGuardError(
+      `fail-on must be one or more of: ${VALID_SEVERITIES.join(', ')}`,
+      ExitCode.ExecutionError,
+    );
+  }
+
+  const parts = value.split(',').map((s) => s.trim());
+  const result = new Set<FindingSeverity>();
+  const seen = new Set<string>();
+
+  for (const part of parts) {
+    if (part === '') continue;
+    if (seen.has(part)) continue;
+    seen.add(part);
+
+    if (!VALID_SEVERITIES.includes(part as FindingSeverity)) {
+      const suggestion = part !== part.toLowerCase()
+        ? ` (did you mean ${part.toLowerCase()}?)`
+        : '';
+      throw new DriftGuardError(
+        `invalid severity level "${part}". Valid values are: ${VALID_SEVERITIES.join(', ')}${suggestion}`,
+        ExitCode.ExecutionError,
+      );
+    }
+
+    result.add(part as FindingSeverity);
+  }
+
+  return [...result].sort((a, b) => VALID_SEVERITIES.indexOf(a) - VALID_SEVERITIES.indexOf(b));
+}
+
+function parseCiConfig(raw: z.infer<typeof configSchema>['ci']): ResolvedConfig['ci'] {
+  if (!raw) return undefined;
+
+  const failOn = raw.failOn !== undefined
+    ? (Array.isArray(raw.failOn)
+        ? parseFailOn(raw.failOn.filter((s): s is string => typeof s === 'string').join(','))
+        : parseFailOn(raw.failOn))
+    : undefined;
+
+  return {
+    failOn,
+    changedOnly: raw.changedOnly,
+    baseRef: raw.baseRef,
+    sarif: raw.sarif,
+  };
 }
