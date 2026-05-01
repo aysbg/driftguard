@@ -100,7 +100,7 @@ describe('explanationSchema', () => {
   });
 });
 
-describe('driftFindingSchema extended', () => {
+describe('driftFindingSchema', () => {
   it('passes finding with specCitations', async () => {
     const { driftFindingSchema } = await loadSchemas();
     const valid = {
@@ -167,7 +167,51 @@ describe('driftFindingSchema extended', () => {
     expect(result.success).toBe(true);
   });
 
-  it('passes finding with all new optional fields', async () => {
+  it('passes finding with Epic 4 optional fields', async () => {
+    const { driftFindingSchema } = await loadSchemas();
+    const valid = {
+      id: 'get|/users/{id}|specs/openapi.yml',
+      summary: 'OpenAPI operation is not implemented',
+      severity: 'high',
+      confidence: 'high',
+      mappingConfidence: 'low',
+      method: 'GET',
+      path: '/users/{id}',
+      affectedFiles: ['src/routes/users.ts'],
+      specReferences: ['specs/openapi.yml'],
+      severityRationale: { factors: ['Missing API contract'] },
+      blastRadius: {
+        level: 'moderate',
+        impactedArtifacts: [
+          { type: 'endpoint', name: 'GET /users/{id}' },
+          { type: 'file', name: 'src/routes/users.ts' },
+        ],
+      },
+      remediationHint: 'Add route handler for GET /users/{id}',
+      baselineStatus: 'new',
+    };
+    const result = driftFindingSchema.safeParse(valid);
+    expect(result.success).toBe(true);
+  });
+
+  it('passes finding without Epic 4 fields (backward compatible)', async () => {
+    const { driftFindingSchema } = await loadSchemas();
+    const valid = {
+      id: 'get|/users/{id}|specs/openapi.yml',
+      summary: 'OpenAPI operation is not implemented',
+      severity: 'high',
+      confidence: 'high',
+      mappingConfidence: 'low',
+      method: 'GET',
+      path: '/users/{id}',
+      affectedFiles: ['src/routes/users.ts'],
+      specReferences: ['specs/openapi.yml'],
+    };
+    const result = driftFindingSchema.safeParse(valid);
+    expect(result.success).toBe(true);
+  });
+
+  it('passes finding with all optional fields combined', async () => {
     const { driftFindingSchema } = await loadSchemas();
     const valid = {
       id: 'get|/users/{id}|specs/openapi.yml',
@@ -196,6 +240,17 @@ describe('driftFindingSchema extended', () => {
         found: 'No response defined',
         reason: 'Spec requires documented responses',
       },
+      severityRationale: { factors: ['Missing API contract', 'High confidence mapping'] },
+      blastRadius: {
+        level: 'broad',
+        impactedArtifacts: [
+          { type: 'endpoint', name: 'GET /users/{id}' },
+          { type: 'file', name: 'src/routes/users.ts' },
+          { type: 'service', name: 'user-service' },
+        ],
+      },
+      remediationHint: 'Implement route handler',
+      baselineStatus: 'new',
     };
     const result = driftFindingSchema.safeParse(valid);
     expect(result.success).toBe(true);

@@ -13,6 +13,11 @@ import type { ScanResult } from '../types/scan.js';
 import type { ScanCliOptions } from '../config/resolver.js';
 import type { FindingSeverity } from '../types/config.js';
 
+import { assignSeverity, sortBySeverity } from '../finding/prioritization.js';
+import { computeBlastRadius } from '../finding/blast-radius.js';
+import { loadBaseline } from '../baseline/manager.js';
+import { compareFindings } from '../baseline/comparator.js';
+
 export interface ScanCommandOptions extends ScanCliOptions {
   json?: boolean;
   ci?: boolean;
@@ -38,9 +43,47 @@ export async function executeScan(
       scanInput.changedFiles = await getChangedFiles(scanInput.repo, baseRef);
     }
 
-    const result = await runScan(scanInput);
+    let result = await runScan(scanInput);
+
+    // Epic 4: enrich findings with severity rationale and blast radius
+    let findings = result.findings.map((f) => {
+      const blastRadius = computeBlastRadius(f, undefined);
+      return assignSeverity({ ...f, blastRadius }, {});
+    });
+    findings = sortBySeverity(findings);
+    result = { ...result, findings };
+
+    // Epic 4: baseline comparison
+    if (scanInput.baseline) {
+      try {
+        const baseline = await loadBaseline(scanInput.repo, scanInput.baseline);
+        const comparisonResults = compareFindings(findings, baseline);
+        const statusMap = new Map(comparisonResults.map((r) => [r.finding.id, r.status]));
+        findings = findings.map((f) => ({ ...f, baselineStatus: statusMap.get(f.id) }));
+        result = {
+          ...result,
+          findings,
+          baselineComparison: {
+            baselineName: scanInput.baseline,
+            findings: comparisonResults,
+          },
+        };
+      } catch (error) {
+        result = {
+          ...result,
+          comparisonUnavailable: error instanceof Error ? error.message : 'Baseline comparison failed',
+        };
+      }
+    }
+
     const failOn = ciConfig?.failOn;
-    const { shouldFail } = evaluateEnforcement(result.findings, failOn);
+    const newOnly = config.ci?.thresholds?.failOnNewOnly;
+    const maxFindings = config.ci?.thresholds?.maxFindings;
+    const maxNewFindings = config.ci?.thresholds?.maxNewFindings;
+    const findingsToEnforce = newOnly
+      ? result.findings.filter((f) => f.baselineStatus === 'new')
+      : result.findings;
+    const { shouldFail } = evaluateEnforcement(findingsToEnforce, { failOn, newOnly, maxFindings, maxNewFindings });
 
     const effectiveResult: ScanResult = {
       ...result,

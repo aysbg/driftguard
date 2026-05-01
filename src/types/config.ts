@@ -10,11 +10,19 @@ import { findingSeveritySchema } from './finding.js';
 
 export type { FindingSeverity } from './finding.js';
 
+export const thresholdsSchema = z.object({
+  maxFindings: z.number().int().nonnegative().optional(),
+  maxNewFindings: z.number().int().nonnegative().optional(),
+  failOnNewOnly: z.boolean().optional(),
+});
+export type Thresholds = z.infer<typeof thresholdsSchema>;
+
 export const ciConfigSchema = z.object({
   failOn: z.array(findingSeveritySchema).optional(),
   changedOnly: z.boolean().optional(),
   baseRef: z.string().optional(),
   sarif: z.string().optional(),
+  thresholds: thresholdsSchema.optional(),
 });
 export type CiConfig = z.infer<typeof ciConfigSchema>;
 
@@ -23,6 +31,7 @@ export const resolvedConfigSchema = z.object({
   spec: z.array(z.string()),
   code: z.array(z.string()),
   configFile: z.string().nullable(),
+  baseline: z.string().optional(),
   ci: ciConfigSchema.optional(),
 });
 export type ResolvedConfig = z.infer<typeof resolvedConfigSchema>;
@@ -32,5 +41,6 @@ export const scanInputSchema = z.object({
   spec: z.array(z.string()),
   code: z.array(z.string()),
   changedFiles: z.array(z.string()).optional(),
+  baseline: z.string().optional(),
 });
 export type ScanInput = z.infer<typeof scanInputSchema>;

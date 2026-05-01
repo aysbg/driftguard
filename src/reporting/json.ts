@@ -15,6 +15,8 @@ export interface JsonReportOutput {
   warnings: ScanResult['warnings'];
   config: ScanResult['config'];
   summary: ReporterSummary;
+  baselineComparison?: ScanResult['baselineComparison'];
+  comparisonUnavailable?: string;
 }
 
 /**
@@ -22,7 +24,7 @@ export interface JsonReportOutput {
  * Object keys are constructed in deterministic order.
  */
 export function buildJsonReport(result: ScanResult): JsonReportOutput {
-  const { status, totalFindings, findings, warnings, config } = result;
+  const { status, totalFindings, findings, warnings, config, baselineComparison, comparisonUnavailable } = result;
 
   // Sort findings deterministically by id for stable output
   const sortedFindings = [...findings].sort((a, b) =>
@@ -38,7 +40,7 @@ export function buildJsonReport(result: ScanResult): JsonReportOutput {
     (f) => f.specCitations || f.codeEvidence || f.explanation,
   ).length;
 
-  return {
+  const output: JsonReportOutput = {
     status,
     totalFindings,
     findings: sortedFindings,
@@ -51,6 +53,16 @@ export function buildJsonReport(result: ScanResult): JsonReportOutput {
       status,
     },
   };
+
+  if (baselineComparison) {
+    output.baselineComparison = baselineComparison;
+  }
+
+  if (comparisonUnavailable) {
+    output.comparisonUnavailable = comparisonUnavailable;
+  }
+
+  return output;
 }
 
 /**

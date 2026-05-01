@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { ScanResult } from '../../../src/types/scan.js';
-import type { Explanation, SpecCitation, CodeEvidence } from '../../../src/types/finding.js';
+import type { Explanation, SpecCitation, CodeEvidence, BlastRadius, SeverityRationale } from '../../../src/types/finding.js';
 import { renderTerminalReport } from '../../../src/reporting/terminal.js';
 
 describe('terminal reporter', () => {
@@ -176,5 +176,46 @@ describe('terminal reporter', () => {
     const output = renderTerminalReport(driftResult);
     expect(output).not.toMatch(/\x1B\[.*[A-Za-z]/);
     expect(output).not.toMatch(/[|]/);
+  });
+
+  const driftResultEpic4: ScanResult = {
+    ...driftResult,
+    findings: [
+      {
+        ...driftResult.findings[0],
+        blastRadius: {
+          level: 'limited',
+          impactedArtifacts: [{ type: 'file', name: 'src/routes/users.ts' }],
+        } satisfies BlastRadius,
+        severityRationale: {
+          factors: ['Missing API route — breaks contract'],
+          score: 1,
+        } satisfies SeverityRationale,
+        baselineStatus: 'new',
+        remediationHint: 'Add route handler for GET /users/{id}',
+      },
+    ],
+  };
+
+  it('renders blast radius label and impacted artifacts', () => {
+    const output = renderTerminalReport(driftResultEpic4);
+    expect(output).toContain('Blast radius: limited');
+    expect(output).toContain('file: src/routes/users.ts');
+  });
+
+  it('renders severity rationale factors', () => {
+    const output = renderTerminalReport(driftResultEpic4);
+    expect(output).toContain('Severity rationale:');
+    expect(output).toContain('Missing API route — breaks contract');
+  });
+
+  it('renders baseline status prefix', () => {
+    const output = renderTerminalReport(driftResultEpic4);
+    expect(output).toContain('[NEW]');
+  });
+
+  it('renders remediation hint', () => {
+    const output = renderTerminalReport(driftResultEpic4);
+    expect(output).toContain('Remediation: Add route handler for GET /users/{id}');
   });
 });

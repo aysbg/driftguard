@@ -37,10 +37,14 @@ export function renderTerminalReport(result: ScanResult): string {
 }
 
 function appendFindingLines(lines: string[], finding: DriftFinding): void {
+  const baselinePrefix = finding.baselineStatus ? `[${finding.baselineStatus.toUpperCase()}] ` : '';
+
   if (finding.method && finding.path) {
-    lines.push(`  ${finding.method} ${finding.path}`);
+    lines.push(`  ${baselinePrefix}${finding.method} ${finding.path}`);
   } else if (finding.path) {
-    lines.push(`  ${finding.path}`);
+    lines.push(`  ${baselinePrefix}${finding.path}`);
+  } else {
+    lines.push(`  ${baselinePrefix}${finding.summary}`);
   }
 
   if (finding.explanation) {
@@ -72,6 +76,26 @@ function appendFindingLines(lines: string[], finding: DriftFinding): void {
 
   for (const ref of finding.specReferences) {
     lines.push(`  Spec: ${ref}`);
+  }
+
+  if (finding.blastRadius) {
+    lines.push(`  Blast radius: ${finding.blastRadius.level}`);
+    if (finding.blastRadius.impactedArtifacts.length > 0) {
+      for (const art of finding.blastRadius.impactedArtifacts) {
+        lines.push(`    - ${art.type}: ${art.name}`);
+      }
+    }
+  }
+
+  if (finding.severityRationale?.factors.length) {
+    lines.push(`  Severity rationale:`);
+    for (const factor of finding.severityRationale.factors) {
+      lines.push(`    - ${factor}`);
+    }
+  }
+
+  if (finding.remediationHint) {
+    lines.push(`  Remediation: ${finding.remediationHint}`);
   }
 
   lines.push(`  Severity: ${severityLabel(finding.severity)}`);

@@ -18,6 +18,7 @@ export async function preflightConfig(config: ResolvedConfig): Promise<ScanInput
     repo: config.repo,
     spec: config.spec,
     code: config.code,
+    baseline: config.baseline,
   };
 }
 

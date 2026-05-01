@@ -69,6 +69,30 @@ export const findingSeveritySchema = z.enum(['high', 'medium', 'low']);
 export type FindingSeverity = z.infer<typeof findingSeveritySchema>;
 export type FindingConfidence = 'high' | 'medium' | 'low';
 
+export const blastRadiusLevelSchema = z.enum(['unknown', 'limited', 'moderate', 'broad']);
+export type BlastRadiusLevel = z.infer<typeof blastRadiusLevelSchema>;
+
+export const impactedArtifactSchema = z.object({
+  type: z.enum(['endpoint', 'service', 'file']),
+  name: z.string(),
+});
+export type ImpactedArtifact = z.infer<typeof impactedArtifactSchema>;
+
+export const blastRadiusSchema = z.object({
+  level: blastRadiusLevelSchema,
+  impactedArtifacts: z.array(impactedArtifactSchema),
+});
+export type BlastRadius = z.infer<typeof blastRadiusSchema>;
+
+export const severityRationaleSchema = z.object({
+  factors: z.array(z.string()),
+  score: z.number().optional(),
+});
+export type SeverityRationale = z.infer<typeof severityRationaleSchema>;
+
+export const baselineStatusSchema = z.enum(['new', 'persisted', 'resolved', 'worsened']);
+export type BaselineStatus = z.infer<typeof baselineStatusSchema>;
+
 export const driftFindingSchema = z.object({
   id: z.string(),
   summary: z.string(),
@@ -82,6 +106,10 @@ export const driftFindingSchema = z.object({
   specCitations: z.array(specCitationSchema).optional(),
   codeEvidence: z.array(codeEvidenceSchema).optional(),
   explanation: explanationSchema.optional(),
+  severityRationale: severityRationaleSchema.optional(),
+  blastRadius: blastRadiusSchema.optional(),
+  remediationHint: z.string().optional(),
+  baselineStatus: baselineStatusSchema.optional(),
 });
 
 export interface DriftFinding extends z.infer<typeof driftFindingSchema> {}

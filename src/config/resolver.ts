@@ -15,6 +15,7 @@ const configSchema = z
   .object({
     spec: z.array(z.string()).optional(),
     code: z.array(z.string()).optional(),
+    baseline: z.string().optional(),
     output: z.object({ json: z.string().optional() }).optional(),
     report: z.object({ format: z.string().optional() }).optional(),
     ci: z.object({
@@ -22,6 +23,11 @@ const configSchema = z
       changedOnly: z.boolean().optional(),
       baseRef: z.string().optional(),
       sarif: z.string().optional(),
+      thresholds: z.object({
+        maxFindings: z.number().int().nonnegative().optional(),
+        maxNewFindings: z.number().int().nonnegative().optional(),
+        failOnNewOnly: z.boolean().optional(),
+      }).optional(),
     }).optional(),
   })
   .passthrough();
@@ -30,6 +36,7 @@ export interface ScanCliOptions {
   repo?: string;
   spec?: string[];
   code?: string[];
+  baseline?: string;
   config?: string;
 }
 
@@ -71,6 +78,7 @@ export async function resolveConfig(
     spec,
     code,
     configFile,
+    baseline: options.baseline ?? fileConfig?.baseline,
     ci,
   };
 }
@@ -199,5 +207,6 @@ function parseCiConfig(raw: z.infer<typeof configSchema>['ci']): ResolvedConfig[
     changedOnly: raw.changedOnly,
     baseRef: raw.baseRef,
     sarif: raw.sarif,
+    thresholds: raw.thresholds,
   };
 }

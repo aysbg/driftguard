@@ -26,6 +26,7 @@ interface SarifRun {
 interface SarifRule {
   id: string;
   shortDescription?: { text: string };
+  messageStrings?: Record<string, { text: string }>;
 }
 
 interface SarifResult {
@@ -33,6 +34,7 @@ interface SarifResult {
   level: 'error' | 'warning' | 'note' | 'none';
   message: { text: string };
   locations?: SarifLocation[];
+  properties?: Record<string, unknown>;
 }
 
 interface SarifLocation {
@@ -85,10 +87,14 @@ function buildRules(findings: DriftFinding[]): SarifRule[] {
   for (const f of findings) {
     if (seen.has(f.id)) continue;
     seen.add(f.id);
-    rules.push({
+    const rule: SarifRule = {
       id: f.id,
       shortDescription: { text: f.summary },
-    });
+    };
+    if (f.severityRationale?.factors && f.severityRationale.factors.length > 0) {
+      rule.messageStrings = { severityRationale: { text: f.severityRationale.factors.join('; ') } };
+    }
+    rules.push(rule);
   }
 
   return rules.sort((a, b) => a.id.localeCompare(b.id));
@@ -126,11 +132,20 @@ function buildResult(finding: DriftFinding): SarifResult {
     });
   }
 
+  const properties: Record<string, unknown> = {};
+  if (finding.blastRadius) {
+    properties.blastRadius = finding.blastRadius;
+  }
+  if (finding.baselineStatus) {
+    properties.baselineStatus = finding.baselineStatus;
+  }
+
   return {
     ruleId: finding.id,
     level: severityToLevel(finding.severity),
     message: { text: finding.summary },
     locations: locations.length > 0 ? locations : undefined,
+    properties: Object.keys(properties).length > 0 ? properties : undefined,
   };
 }
 
