@@ -51,6 +51,7 @@ export const specDocumentSchema = z.object({
   filePath: z.string(),
   sections: z.array(specSectionSchema),
   operations: z.array(openApiOperationSchema),
+  source: z.enum(['foundation', 'local']).optional(),
 });
 export type SpecDocument = z.infer<typeof specDocumentSchema>;
 

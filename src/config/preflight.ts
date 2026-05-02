@@ -11,7 +11,9 @@ export async function preflightConfig(config: ResolvedConfig): Promise<ScanInput
     await assertReadablePath(config.configFile, 'config file');
   }
 
-  await assertReadablePaths(config.spec, 'spec');
+  if (!config.foundation?.enabled) {
+    await assertReadablePaths(config.spec, 'spec');
+  }
   await assertReadablePaths(config.code, 'code');
 
   return {
@@ -19,6 +21,7 @@ export async function preflightConfig(config: ResolvedConfig): Promise<ScanInput
     spec: config.spec,
     code: config.code,
     baseline: config.baseline,
+    foundationConfig: config.foundation,
   };
 }
 

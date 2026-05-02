@@ -29,6 +29,13 @@ const configSchema = z
         failOnNewOnly: z.boolean().optional(),
       }).optional(),
     }).optional(),
+    foundation: z.object({
+      enabled: z.boolean().optional(),
+      apiUrl: z.string().optional(),
+      projectId: z.string().optional(),
+      authToken: z.string().optional(),
+      writeBack: z.boolean().optional(),
+    }).optional(),
   })
   .passthrough();
 
@@ -43,6 +50,8 @@ export interface ScanCliOptions {
 export interface ResolveConfigContext {
   cwd?: string;
 }
+
+import { loadFoundationMapping } from '../foundation/project-store.js';
 
 export async function resolveConfig(
   options: ScanCliOptions,
@@ -72,6 +81,14 @@ export async function resolveConfig(
     : (configCode ?? normalizePaths(DEFAULT_CODE_PATHS, repo));
 
   const ci = fileConfig?.ci ? parseCiConfig(fileConfig.ci) : undefined;
+  const foundation = parseFoundationConfig(fileConfig?.foundation, options);
+
+  if (foundation?.enabled === true && !foundation.projectId) {
+    const mapping = await loadFoundationMapping(repo);
+    if (mapping) {
+      foundation.projectId = mapping.projectId;
+    }
+  }
 
   return {
     repo,
@@ -80,6 +97,32 @@ export async function resolveConfig(
     configFile,
     baseline: options.baseline ?? fileConfig?.baseline,
     ci,
+    foundation,
+  };
+}
+
+function parseFoundationConfig(
+  fileConfig: z.infer<typeof configSchema>['foundation'],
+  options: ScanCliOptions & { foundationProject?: string; foundationToken?: string; foundationUrl?: string; writeBack?: boolean },
+): ResolvedConfig['foundation'] {
+  const base = fileConfig ?? {};
+  const cliEnabled = options.foundationProject !== undefined || options.foundationToken !== undefined;
+  const enabled = cliEnabled ? true : base.enabled;
+  const apiUrl = options.foundationUrl ?? base.apiUrl;
+  const projectId = options.foundationProject ?? base.projectId;
+  const authToken = options.foundationToken ?? base.authToken;
+  const writeBack = options.writeBack ?? base.writeBack;
+
+  if (enabled === undefined && projectId === undefined && apiUrl === undefined && authToken === undefined && writeBack === undefined) {
+    return undefined;
+  }
+
+  return {
+    enabled,
+    apiUrl,
+    projectId,
+    authToken,
+    writeBack,
   };
 }
 

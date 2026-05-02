@@ -8,13 +8,12 @@ import type { RuleEngineResult } from '../rules/engine.js';
 import type { SectionMapping } from '../types/finding.js';
 
 export async function runScan(input: ScanInput): Promise<ScanResult> {
-  const { ingestSpecs } = await import('../ingestion/spec-ingestor.js');
   const { indexRepository } = await import('../repository/indexer.js');
   const { mapOpenApiOperationsToRoutes } = await import('../mapping/mapper.js');
   const { mapSectionsToCode } = await import('../mapping/section-mapper.js');
   const { runRuleEngine } = await import('../rules/engine.js');
 
-  const spec: UnifiedSpecIR = await ingestSpecs({ repo: input.repo, spec: input.spec });
+  const spec: UnifiedSpecIR = await resolveSpec(input);
   const repositoryResult: RepositoryIndexResult = await indexRepository({ repo: input.repo, code: input.code, changedFiles: input.changedFiles });
 
   const usableDocs = spec.documents.filter((d) => d.operations.length > 0 || d.sections.length > 0);
@@ -51,4 +50,32 @@ export async function runScan(input: ScanInput): Promise<ScanResult> {
     ),
     config: input,
   };
+}
+
+async function resolveSpec(input: ScanInput): Promise<UnifiedSpecIR> {
+  if (input.foundationConfig?.enabled === true) {
+    const { resolveFoundationToken } = await import('../foundation/auth.js');
+    const token = resolveFoundationToken({
+      token: input.foundationConfig.authToken,
+    });
+    if (!token) {
+      throw new DriftGuardError(
+        'Foundation is enabled but no auth token is available. Set --foundation-token or DRIFTGUARD_FOUNDATION_TOKEN.',
+        ExitCode.ExecutionError,
+      );
+    }
+
+    const { FoundationMcpClientImpl } = await import('../foundation/mcp-client.js');
+    const { fetchFoundationSpecs } = await import('../foundation/spec-fetcher.js');
+    const client = new FoundationMcpClientImpl();
+    await client.connect(token, input.foundationConfig.apiUrl);
+    try {
+      return await fetchFoundationSpecs(client, input.foundationConfig.projectId ?? '');
+    } finally {
+      await client.disconnect();
+    }
+  }
+
+  const { ingestSpecs } = await import('../ingestion/spec-ingestor.js');
+  return ingestSpecs({ repo: input.repo, spec: input.spec });
 }

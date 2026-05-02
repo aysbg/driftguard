@@ -8,6 +8,9 @@ import { preflightConfig } from '../config/preflight.js';
 import { runScan } from '../orchestrator/run-scan.js';
 import { evaluateEnforcement } from '../thresholds/enforcement.js';
 import { getChangedFiles } from '../git/changed-files.js';
+import { shouldWriteBack, writeBackDeviationReport } from '../foundation/deviation-reporter.js';
+import { FoundationMcpClientImpl } from '../foundation/mcp-client.js';
+import { resolveFoundationToken } from '../foundation/auth.js';
 import { DriftGuardError, ExitCode } from '../errors.js';
 import type { ScanResult } from '../types/scan.js';
 import type { ScanCliOptions } from '../config/resolver.js';
@@ -25,6 +28,10 @@ export interface ScanCommandOptions extends ScanCliOptions {
   changedOnly?: boolean;
   baseRef?: string;
   sarif?: string;
+  foundationProject?: string;
+  foundationToken?: string;
+  foundationUrl?: string;
+  writeBack?: boolean;
 }
 
 export async function executeScan(
@@ -89,6 +96,28 @@ export async function executeScan(
       ...result,
       status: shouldFail ? 'drift_found' : 'ok',
     };
+
+    // Epic 5: write-back deviation report to Foundation
+    const writeBackOpts = shouldWriteBack(config.foundation);
+    if (writeBackOpts) {
+      const token = resolveFoundationToken({ token: options.foundationToken });
+      if (token) {
+        let client: FoundationMcpClientImpl | null = null;
+        try {
+          client = new FoundationMcpClientImpl();
+          await client.connect(token, config.foundation?.apiUrl);
+          await writeBackDeviationReport(client, writeBackOpts.projectId, effectiveResult);
+        } catch (wbError) {
+          log.stderr(
+            `[driftguard] Write-back warning: ${wbError instanceof Error ? wbError.message : String(wbError)}`,
+          );
+        } finally {
+          await client?.disconnect();
+        }
+      } else {
+        log.stderr('[driftguard] Write-back skipped: no Foundation token available');
+      }
+    }
 
     return await outputResult(effectiveResult, resolvedOptions.json, resolvedOptions.sarif, log);
   } catch (error) {

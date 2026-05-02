@@ -7,6 +7,7 @@ import {
   executeBaselineClear,
   executeBaselineList,
 } from './commands/baseline.js';
+import { executeFoundationCommand } from './commands/foundation.js';
 
 const collectArray = (value: string, previous: string[]): string[] => {
   return [...previous, value];
@@ -38,6 +39,10 @@ program
   .option('--changed-only', 'Only scan git-tracked changed files')
   .option('--base-ref <ref>', 'Git base ref to diff against (used with --changed-only)')
   .option('--sarif <path>', 'Write SARIF output to file')
+  .option('--foundation-project <id>', 'Foundation project ID')
+  .option('--foundation-token <token>', 'Foundation auth token')
+  .option('--foundation-url <url>', 'Foundation API URL')
+  .option('--write-back', 'Enable write-back to Foundation')
   .action(async (options) => {
     try {
       const exitCode = await executeScan(options, {
@@ -103,6 +108,102 @@ baseline
   .action(async (options) => {
     try {
       const exitCode = await executeBaselineList(options, {
+        stdout: (msg) => process.stdout.write(msg + '\n'),
+        stderr: (msg) => process.stderr.write(msg + '\n'),
+      });
+      process.exitCode = exitCode;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      process.stderr.write(message + '\n');
+      process.exit(2);
+    }
+  });
+
+const foundation = program
+  .command('foundation')
+  .description('Manage Foundation integration');
+
+foundation
+  .command('auth')
+  .description('Configure Foundation authentication')
+  .option('--token <token>', 'Foundation auth token')
+  .option('--foundation-url <url>', 'Foundation API URL')
+  .action(async (options) => {
+    try {
+      const exitCode = await executeFoundationCommand('auth', options, {
+        stdout: (msg) => process.stdout.write(msg + '\n'),
+        stderr: (msg) => process.stderr.write(msg + '\n'),
+      });
+      process.exitCode = exitCode;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      process.stderr.write(message + '\n');
+      process.exit(2);
+    }
+  });
+
+foundation
+  .command('projects')
+  .description('List Foundation projects')
+  .option('--token <token>', 'Foundation auth token')
+  .option('--foundation-url <url>', 'Foundation API URL')
+  .action(async (options) => {
+    try {
+      const exitCode = await executeFoundationCommand('projects', options, {
+        stdout: (msg) => process.stdout.write(msg + '\n'),
+        stderr: (msg) => process.stderr.write(msg + '\n'),
+      });
+      process.exitCode = exitCode;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      process.stderr.write(message + '\n');
+      process.exit(2);
+    }
+  });
+
+foundation
+  .command('select')
+  .description('Select a Foundation project for this repository')
+  .option('--project-id <id>', 'Foundation project ID')
+  .option('--repo <path>', 'Repository path', '.')
+  .action(async (options) => {
+    try {
+      const exitCode = await executeFoundationCommand('select', options, {
+        stdout: (msg) => process.stdout.write(msg + '\n'),
+        stderr: (msg) => process.stderr.write(msg + '\n'),
+      });
+      process.exitCode = exitCode;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      process.stderr.write(message + '\n');
+      process.exit(2);
+    }
+  });
+
+foundation
+  .command('clear')
+  .description('Clear the stored Foundation project mapping')
+  .option('--repo <path>', 'Repository path', '.')
+  .action(async (options) => {
+    try {
+      const exitCode = await executeFoundationCommand('clear', options, {
+        stdout: (msg) => process.stdout.write(msg + '\n'),
+        stderr: (msg) => process.stderr.write(msg + '\n'),
+      });
+      process.exitCode = exitCode;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      process.stderr.write(message + '\n');
+      process.exit(2);
+    }
+  });
+
+foundation
+  .command('sync')
+  .description('Sync data with Foundation')
+  .action(async (options) => {
+    try {
+      const exitCode = await executeFoundationCommand('sync', options, {
         stdout: (msg) => process.stdout.write(msg + '\n'),
         stderr: (msg) => process.stderr.write(msg + '\n'),
       });

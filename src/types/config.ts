@@ -26,6 +26,15 @@ export const ciConfigSchema = z.object({
 });
 export type CiConfig = z.infer<typeof ciConfigSchema>;
 
+export const foundationConfigSchema = z.object({
+  enabled: z.boolean().optional(),
+  apiUrl: z.string().optional(),
+  projectId: z.string().optional(),
+  authToken: z.string().optional(),
+  writeBack: z.boolean().optional(),
+});
+export type FoundationConfig = z.infer<typeof foundationConfigSchema>;
+
 export const resolvedConfigSchema = z.object({
   repo: z.string(),
   spec: z.array(z.string()),
@@ -33,6 +42,7 @@ export const resolvedConfigSchema = z.object({
   configFile: z.string().nullable(),
   baseline: z.string().optional(),
   ci: ciConfigSchema.optional(),
+  foundation: foundationConfigSchema.optional(),
 });
 export type ResolvedConfig = z.infer<typeof resolvedConfigSchema>;
 
@@ -42,5 +52,6 @@ export const scanInputSchema = z.object({
   code: z.array(z.string()),
   changedFiles: z.array(z.string()).optional(),
   baseline: z.string().optional(),
+  foundationConfig: foundationConfigSchema.optional(),
 });
 export type ScanInput = z.infer<typeof scanInputSchema>;
