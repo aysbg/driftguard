@@ -41,6 +41,7 @@ export const resolvedConfigSchema = z.object({
   code: z.array(z.string()),
   configFile: z.string().nullable(),
   baseline: z.string().optional(),
+  plugins: z.array(z.string()).optional(),
   ci: ciConfigSchema.optional(),
   foundation: foundationConfigSchema.optional(),
 });
@@ -52,6 +53,7 @@ export const scanInputSchema = z.object({
   code: z.array(z.string()),
   changedFiles: z.array(z.string()).optional(),
   baseline: z.string().optional(),
+  plugins: z.array(z.string()).optional(),
   foundationConfig: foundationConfigSchema.optional(),
 });
 export type ScanInput = z.infer<typeof scanInputSchema>;

@@ -21,6 +21,7 @@ export async function preflightConfig(config: ResolvedConfig): Promise<ScanInput
     spec: config.spec,
     code: config.code,
     baseline: config.baseline,
+    plugins: config.plugins,
     foundationConfig: config.foundation,
   };
 }

@@ -43,6 +43,7 @@ program
   .option('--foundation-token <token>', 'Foundation auth token')
   .option('--foundation-url <url>', 'Foundation API URL')
   .option('--write-back', 'Enable write-back to Foundation')
+  .option('--plugin <path>', 'Load custom rule plugin (repeatable)', collectArray, [])
   .action(async (options) => {
     try {
       const exitCode = await executeScan(options, {

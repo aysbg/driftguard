@@ -32,6 +32,7 @@ export interface ScanCommandOptions extends ScanCliOptions {
   foundationToken?: string;
   foundationUrl?: string;
   writeBack?: boolean;
+  plugins?: string[];
 }
 
 export async function executeScan(
