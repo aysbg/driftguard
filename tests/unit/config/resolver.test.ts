@@ -28,9 +28,9 @@ function createTempRepo(configContent: string): string {
 
 describe('resolveConfig', () => {
   it('resolves flags-only absolute repo, spec, and code paths', async () => {
-    const repo = resolve(fixturesRoot, 'no-drift');
-    const specPath = resolve(repo, 'specs/openapi.yml');
-    const codePath = resolve(repo, 'src/routes');
+    const repo = resolve(fixturesRoot, 'parse-warning');
+    const specPath = resolve(repo, 'specs/valid.yml');
+    const codePath = resolve(repo, 'src');
 
     const resolvedConfig = await resolveConfig({
       repo,
@@ -73,7 +73,7 @@ describe('resolveConfig', () => {
   });
 
   it('uses defaults when config file is absent', async () => {
-    const repo = resolve(fixturesRoot, 'no-drift');
+    const repo = resolve(fixturesRoot, 'parse-warning');
 
     const resolvedConfig = await resolveConfig({ repo });
 

@@ -115,9 +115,10 @@ describe('scan command', () => {
     expect(result.status).toBe(ExitCode.DriftFound);
     const json = JSON.parse(result.stdout);
     expect(json.status).toBe('drift_found');
-    expect(json.totalFindings).toBe(1);
-    expect(json.findings.length).toBe(1);
-    const finding = json.findings[0];
+    expect(json.totalFindings).toBe(2);
+    expect(json.findings.length).toBe(2);
+    const finding = json.findings.find((f: { path: string }) => f.path === '/users/{id}');
+    expect(finding).toBeDefined();
     expect(finding.method).toBe('GET');
     expect(finding.path).toBe('/users/{id}');
     expect(finding.explanation?.expected).toBe('OpenAPI defines GET /users/{id} with parameters [path: id]');

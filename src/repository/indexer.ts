@@ -5,6 +5,7 @@ import { Project } from 'ts-morph';
 import type { ScanInput } from '../types/config.js';
 import type { ParseWarning } from '../types/spec.js';
 import type { RepositoryIndex } from '../types/repository.js';
+import { indexModelsInSourceFile } from './models.js';
 import { indexRoutesInSourceFile } from './routes.js';
 
 const SUPPORTED_CODE_FILE_EXTENSIONS = new Set(['.cts', '.js', '.jsx', '.mts', '.ts', '.tsx']);
@@ -23,10 +24,13 @@ export async function indexRepository(input: Pick<ScanInput, 'repo' | 'code'> & 
     index: {
       files: codeFiles.map((filePath) => {
         const sourceFile = project.addSourceFileAtPath(filePath);
+        const indexedModels = indexModelsInSourceFile(sourceFile, input.repo);
 
         return {
           filePath: toRelativeFilePath(input.repo, filePath),
-          routes: indexRoutesInSourceFile(sourceFile, input.repo)
+          routes: indexRoutesInSourceFile(sourceFile, input.repo),
+          models: indexedModels.filter((model) => model.kind === 'interface'),
+          types: indexedModels.filter((model) => model.kind === 'type_alias')
         };
       })
     },

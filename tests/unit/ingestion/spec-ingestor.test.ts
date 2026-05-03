@@ -41,6 +41,9 @@ describe('ingestSpecs', () => {
           },
         ],
         operations: [],
+        dataModels: [],
+        businessRules: [],
+        stories: [],
       },
       {
         filePath: 'specs/openapi.yml',
@@ -71,6 +74,9 @@ describe('ingestSpecs', () => {
             ],
           },
         ],
+        dataModels: [],
+        businessRules: [],
+        stories: [],
       },
     ]);
   });
@@ -113,6 +119,9 @@ describe('ingestSpecs', () => {
             ],
           },
         ],
+        dataModels: [],
+        businessRules: [],
+        stories: [],
       },
     ]);
   });
@@ -145,6 +154,9 @@ describe('ingestSpecs', () => {
             ],
           },
         ],
+        dataModels: [],
+        businessRules: [],
+        stories: [],
       },
     ]);
   });
@@ -178,6 +190,9 @@ describe('ingestSpecs', () => {
             ],
           },
         ],
+        dataModels: [],
+        businessRules: [],
+        stories: [],
       },
     ]);
   });

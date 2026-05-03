@@ -101,6 +101,22 @@ describe('evaluateOpenApiRouteExists', () => {
       sectionMappings: undefined,
       findings: [
         {
+          id: 'extra-route-not-in-spec:GET|/health|src/routes/users.ts',
+          summary: 'Route implementation exists with no matching spec operation',
+          severity: 'medium',
+          confidence: 'high',
+          mappingConfidence: 'medium',
+          method: 'GET',
+          path: '/health',
+          affectedFiles: ['src/routes/users.ts'],
+          specReferences: [],
+          explanation: {
+            expected: 'matching spec operation',
+            found: 'no spec operation for this route',
+            reason: 'extra route in code not documented in spec',
+          },
+        },
+        {
           id: 'openapi-route-exists:GET|/users/{id}|specs/openapi.yml',
           summary: 'OpenAPI operation is not implemented by an indexed route',
           severity: 'high',
@@ -128,12 +144,7 @@ describe('evaluateOpenApiRouteExists', () => {
           },
         },
       ],
-      warnings: [
-        {
-          filePath: 'src/routes/users.ts',
-          message: 'extra_route_not_in_spec: GET /health',
-        },
-      ],
+      warnings: [],
     });
   });
 

@@ -72,4 +72,89 @@ describe('indexRoutesInSourceFile', () => {
       rmSync(repoRoot, { recursive: true, force: true });
     }
   });
+
+  it('indexes NestJS controller decorators with literal paths', () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), 'driftguard-routes-'));
+
+    try {
+      const filePath = resolve(repoRoot, 'src/controllers/users.controller.ts');
+      mkdirSync(resolve(repoRoot, 'src/controllers'), { recursive: true });
+      writeFileSync(
+        filePath,
+        [
+          "import { Controller, Get, Post } from '@nestjs/common';",
+          '',
+          "@Controller('users')",
+          'class UsersController {',
+          '  @Get()',
+          '  list() {}',
+          '',
+          '  @Post()',
+          '  create() {}',
+          '',
+          "  @Get(':id')",
+          '  findOne() {}',
+          '}'
+        ].join('\n'),
+        'utf8'
+      );
+
+      const sourceFile = loadSourceFile(filePath);
+
+      expect(indexRoutesInSourceFile(sourceFile, repoRoot)).toEqual([
+        {
+          method: 'GET',
+          path: '/users/',
+          filePath: 'src/controllers/users.controller.ts',
+          line: 5,
+          snippet: '@Get()'
+        },
+        {
+          method: 'POST',
+          path: '/users/',
+          filePath: 'src/controllers/users.controller.ts',
+          line: 8,
+          snippet: '@Post()'
+        },
+        {
+          method: 'GET',
+          path: '/users/{id}',
+          filePath: 'src/controllers/users.controller.ts',
+          line: 11,
+          snippet: "@Get(':id')"
+        }
+      ]);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('ignores NestJS decorators with non-literal arguments', () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), 'driftguard-routes-'));
+
+    try {
+      const filePath = resolve(repoRoot, 'src/controllers/users.controller.ts');
+      mkdirSync(resolve(repoRoot, 'src/controllers'), { recursive: true });
+      writeFileSync(
+        filePath,
+        [
+          "import { Controller, Get } from '@nestjs/common';",
+          '',
+          "const dynamicPath = 'users';",
+          '@Controller(dynamicPath)',
+          'class UsersController {',
+          "  @Get(':id')",
+          '  findOne() {}',
+          '}'
+        ].join('\n'),
+        'utf8'
+      );
+
+      const sourceFile = loadSourceFile(filePath);
+
+      expect(indexRoutesInSourceFile(sourceFile, repoRoot)).toEqual([]);
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
 });

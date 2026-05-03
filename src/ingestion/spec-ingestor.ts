@@ -3,8 +3,9 @@ import { extname, isAbsolute, relative, resolve, sep } from 'node:path';
 import fg from 'fast-glob';
 
 import { detectAdrDocuments, extractAdrDocuments } from './adr.js';
+import { extractBusinessRules } from './business-rules.js';
 import { extractMarkdownSections } from './markdown.js';
-import { extractOpenApiOperations } from './openapi.js';
+import { extractDataModels, extractOpenApiOperations } from './openapi.js';
 import type { ResolvedConfig } from '../types/config.js';
 import type { ParseWarning, SpecDocument, UnifiedSpecIR } from '../types/spec.js';
 
@@ -29,8 +30,17 @@ export async function ingestSpecs(config: Pick<ResolvedConfig, 'repo' | 'spec'>)
       const extension = extname(filePath).toLowerCase();
 
       if (markdownExtensions.has(extension)) {
+        const businessRules = extractBusinessRules(filePath, content);
+
         if (detectAdrDocuments(filePath, content)) {
-          documents.push(...extractAdrDocuments(filePath, content));
+          const adrDocuments = extractAdrDocuments(filePath, content).map((document) => ({
+            ...document,
+            businessRules,
+            dataModels: [],
+            stories: [],
+          }));
+
+          documents.push(...adrDocuments);
           continue;
         }
 
@@ -38,6 +48,9 @@ export async function ingestSpecs(config: Pick<ResolvedConfig, 'repo' | 'spec'>)
           filePath,
           sections: extractMarkdownSections(filePath, content),
           operations: [],
+          businessRules,
+          dataModels: [],
+          stories: [],
         });
         continue;
       }
@@ -47,6 +60,9 @@ export async function ingestSpecs(config: Pick<ResolvedConfig, 'repo' | 'spec'>)
           filePath,
           sections: [],
           operations: extractOpenApiOperations(filePath, content),
+          dataModels: extractDataModels(filePath, content),
+          businessRules: [],
+          stories: [],
         });
       }
     } catch (error) {
