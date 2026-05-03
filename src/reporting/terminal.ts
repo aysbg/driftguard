@@ -33,7 +33,21 @@ export function renderTerminalReport(result: ScanResult): string {
   lines.push(`Total findings: ${totalFindings}`);
   lines.push(`Warnings: ${warnings.length}`);
 
+  if (result.historical) {
+    const { historical } = result;
+    lines.push('');
+    lines.push(`Historical Drift (since ${historical.sinceRef})`);
+    lines.push('=================================');
+    lines.push(`New:        ${historical.newFindings.length} ${pluralize('finding', historical.newFindings.length)}`);
+    lines.push(`Resolved:   ${historical.resolvedFindings.length} ${pluralize('finding', historical.resolvedFindings.length)}`);
+    lines.push(`Persisted:  ${historical.persistedFindings.length} ${pluralize('finding', historical.persistedFindings.length)}`);
+  }
+
   return lines.join('\n');
+}
+
+function pluralize(word: string, count: number): string {
+  return count === 1 ? word : `${word}s`;
 }
 
 function appendFindingLines(lines: string[], finding: DriftFinding): void {

@@ -21,6 +21,7 @@ interface SarifRun {
   };
   results: SarifResult[];
   invocations?: SarifInvocation[];
+  properties?: Record<string, unknown>;
 }
 
 interface SarifRule {
@@ -65,6 +66,13 @@ interface SarifNotification {
   descriptor: { id: string };
   level: 'error' | 'warning' | 'note' | 'none';
   message: { text: string };
+}
+
+interface HistoricalLike {
+  sinceRef: string;
+  newFindings: unknown[];
+  resolvedFindings: unknown[];
+  persistedFindings: unknown[];
 }
 
 function severityToLevel(severity: string): SarifResult['level'] {
@@ -164,6 +172,18 @@ export function renderSarifReport(result: ScanResult): SarifLog {
     },
     results,
   };
+
+  if ('historical' in result && result.historical) {
+    const historical = result.historical as HistoricalLike;
+    run.properties = {
+      historicalDrift: {
+        sinceRef: historical.sinceRef,
+        newFindings: historical.newFindings.length,
+        resolvedFindings: historical.resolvedFindings.length,
+        persistedFindings: historical.persistedFindings.length,
+      },
+    };
+  }
 
   if (result.warnings.length > 0) {
     run.invocations = [

@@ -230,6 +230,33 @@ describe('json reporter', () => {
       const report = buildJsonReport(enrichedDriftResult);
       expect(report.summary.enrichedFindings).toBe(1);
     });
+
+    it('includes historical data when present', () => {
+      const resultWithHistorical = {
+        ...driftResult,
+        historical: {
+          sinceRef: 'HEAD~2',
+          currentFindings: driftResult.findings,
+          historicalFindings: [],
+          newFindings: driftResult.findings,
+          resolvedFindings: [],
+          persistedFindings: [],
+        },
+      } as ScanResult & {
+        historical: {
+          sinceRef: string;
+          currentFindings: ScanResult['findings'];
+          historicalFindings: ScanResult['findings'];
+          newFindings: ScanResult['findings'];
+          resolvedFindings: ScanResult['findings'];
+          persistedFindings: ScanResult['findings'];
+        };
+      };
+
+      const report = buildJsonReport(resultWithHistorical as ScanResult);
+      expect(report).toHaveProperty('historical');
+      expect((report as { historical: { sinceRef: string } }).historical.sinceRef).toBe('HEAD~2');
+    });
   });
 
   describe('renderJsonReport', () => {

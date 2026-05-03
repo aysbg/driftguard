@@ -5,6 +5,7 @@ import { renderTerminalReport } from '../reporting/terminal.js';
 import { renderSarifReport } from '../reporting/sarif.js';
 import { resolveConfig, parseFailOn } from '../config/resolver.js';
 import { preflightConfig } from '../config/preflight.js';
+import { runHistoricalScan } from './historical-scan.js';
 import { runScan } from '../orchestrator/run-scan.js';
 import { evaluateEnforcement } from '../thresholds/enforcement.js';
 import { getChangedFiles } from '../git/changed-files.js';
@@ -27,6 +28,7 @@ export interface ScanCommandOptions extends ScanCliOptions {
   failOn?: string[];
   changedOnly?: boolean;
   baseRef?: string;
+  since?: string;
   sarif?: string;
   foundationProject?: string;
   foundationToken?: string;
@@ -51,7 +53,9 @@ export async function executeScan(
       scanInput.changedFiles = await getChangedFiles(scanInput.repo, baseRef);
     }
 
-    let result = await runScan(scanInput);
+    let result = scanInput.since
+      ? (await runHistoricalScan(scanInput, scanInput.since)).result
+      : await runScan(scanInput);
 
     // Epic 4: enrich findings with severity rationale and blast radius
     let findings = result.findings.map((f) => {

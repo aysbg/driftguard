@@ -20,7 +20,7 @@ describe('renderSarifReport', () => {
         summary: 'High severity finding',
         severity: 'high',
         confidence: 'high',
-        mappingConfidence: 'high',
+        mappingConfidence: 'medium',
         affectedFiles: ['src/routes/users.ts'],
         specReferences: ['specs/openapi.yml'],
       },
@@ -29,7 +29,7 @@ describe('renderSarifReport', () => {
         summary: 'Medium severity finding',
         severity: 'medium',
         confidence: 'high',
-        mappingConfidence: 'high',
+        mappingConfidence: 'medium',
         affectedFiles: ['src/routes/orders.ts'],
         specReferences: ['specs/openapi.yml'],
         codeEvidence: [
@@ -84,7 +84,7 @@ describe('renderSarifReport', () => {
         summary: 'Low severity finding',
         severity: 'low',
         confidence: 'high',
-        mappingConfidence: 'high',
+        mappingConfidence: 'medium',
         affectedFiles: ['src/routes/items.ts'],
         specReferences: ['specs/openapi.yml'],
       },
@@ -96,6 +96,72 @@ describe('renderSarifReport', () => {
     expect(parsed.runs[0].results[0].level).toBe('note');
   });
 
+  it('includes historical drift metadata when historical data is present', () => {
+    const result = {
+      ...makeResult([
+        {
+          id: 'finding-historical',
+          summary: 'Historical test finding',
+          severity: 'low',
+          confidence: 'high',
+          mappingConfidence: 'medium',
+          affectedFiles: ['src/routes/items.ts'],
+          specReferences: ['specs/openapi.yml'],
+        },
+      ]),
+      historical: {
+        sinceRef: 'HEAD~2',
+        currentFindings: [],
+        historicalFindings: [],
+        newFindings: [{
+          id: 'new-1',
+          summary: 'New finding',
+          severity: 'low',
+          confidence: 'high',
+          mappingConfidence: 'medium',
+          affectedFiles: ['src/routes/new.ts'],
+          specReferences: ['specs/openapi.yml'],
+        }],
+        resolvedFindings: [{
+          id: 'resolved-1',
+          summary: 'Resolved finding',
+          severity: 'low',
+          confidence: 'high',
+          mappingConfidence: 'medium',
+          affectedFiles: ['src/routes/resolved.ts'],
+          specReferences: ['specs/openapi.yml'],
+        }],
+        persistedFindings: [{
+          id: 'persisted-1',
+          summary: 'Persisted finding',
+          severity: 'low',
+          confidence: 'high',
+          mappingConfidence: 'medium',
+          affectedFiles: ['src/routes/persisted.ts'],
+          specReferences: ['specs/openapi.yml'],
+        }, {
+          id: 'persisted-2',
+          summary: 'Persisted finding 2',
+          severity: 'low',
+          confidence: 'high',
+          mappingConfidence: 'medium',
+          affectedFiles: ['src/routes/persisted-2.ts'],
+          specReferences: ['specs/openapi.yml'],
+        }],
+      },
+    } as unknown as ScanResult;
+
+    const sarif = renderSarifReport(result);
+    expect(sarif.runs[0].properties).toEqual({
+      historicalDrift: {
+        sinceRef: 'HEAD~2',
+        newFindings: 1,
+        resolvedFindings: 1,
+        persistedFindings: 2,
+      },
+    });
+  });
+
   describe('severity to SARIF level mapping', () => {
     it('maps high severity to error level', () => {
       const result = makeResult([{
@@ -103,7 +169,7 @@ describe('renderSarifReport', () => {
         summary: 'High severity finding',
         severity: 'high',
         confidence: 'high',
-        mappingConfidence: 'high',
+        mappingConfidence: 'medium',
         affectedFiles: ['src/routes/api.ts'],
         specReferences: ['specs/openapi.yml'],
       }]);
@@ -117,7 +183,7 @@ describe('renderSarifReport', () => {
         summary: 'Medium severity finding',
         severity: 'medium',
         confidence: 'high',
-        mappingConfidence: 'high',
+        mappingConfidence: 'medium',
         affectedFiles: ['src/routes/api.ts'],
         specReferences: ['specs/openapi.yml'],
       }]);
@@ -131,7 +197,7 @@ describe('renderSarifReport', () => {
         summary: 'Low severity finding',
         severity: 'low',
         confidence: 'high',
-        mappingConfidence: 'high',
+        mappingConfidence: 'medium',
         affectedFiles: ['src/routes/api.ts'],
         specReferences: ['specs/openapi.yml'],
       }]);
@@ -145,7 +211,7 @@ describe('renderSarifReport', () => {
         summary: 'Unknown severity finding',
         severity: 'unknown' as any,
         confidence: 'high',
-        mappingConfidence: 'high',
+        mappingConfidence: 'medium',
         affectedFiles: ['src/routes/api.ts'],
         specReferences: ['specs/openapi.yml'],
       }]);
@@ -159,7 +225,7 @@ describe('renderSarifReport', () => {
         summary: 'Finding with rationale',
         severity: 'high',
         confidence: 'high',
-        mappingConfidence: 'high',
+        mappingConfidence: 'medium',
         affectedFiles: ['src/routes/api.ts'],
         specReferences: ['specs/openapi.yml'],
         severityRationale: {
@@ -180,7 +246,7 @@ describe('renderSarifReport', () => {
           summary: 'High severity finding',
           severity: 'high',
           confidence: 'high',
-          mappingConfidence: 'high',
+          mappingConfidence: 'medium',
           affectedFiles: ['src/routes/high.ts'],
           specReferences: ['specs/openapi.yml'],
         },
@@ -189,7 +255,7 @@ describe('renderSarifReport', () => {
           summary: 'Medium severity finding',
           severity: 'medium',
           confidence: 'high',
-          mappingConfidence: 'high',
+          mappingConfidence: 'medium',
           affectedFiles: ['src/routes/medium.ts'],
           specReferences: ['specs/openapi.yml'],
         },
@@ -198,7 +264,7 @@ describe('renderSarifReport', () => {
           summary: 'Low severity finding',
           severity: 'low',
           confidence: 'high',
-          mappingConfidence: 'high',
+          mappingConfidence: 'medium',
           affectedFiles: ['src/routes/low.ts'],
           specReferences: ['specs/openapi.yml'],
         },
@@ -207,7 +273,7 @@ describe('renderSarifReport', () => {
           summary: 'Unknown severity finding',
           severity: 'unknown' as any,
           confidence: 'high',
-          mappingConfidence: 'high',
+          mappingConfidence: 'medium',
           affectedFiles: ['src/routes/unknown.ts'],
           specReferences: ['specs/openapi.yml'],
         },

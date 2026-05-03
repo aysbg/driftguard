@@ -11,9 +11,19 @@ export interface ScanResult {
   findings: DriftFinding[];
   warnings: ParseWarning[];
   config: ScanInput;
+  historical?: HistoricalScanResult;
   baselineComparison?: {
     baselineName: string;
     findings: BaselineComparisonResult[];
   };
   comparisonUnavailable?: string;
+}
+
+export interface HistoricalScanResult {
+  sinceRef: string;
+  currentFindings: DriftFinding[];
+  historicalFindings: DriftFinding[];
+  newFindings: DriftFinding[];
+  resolvedFindings: DriftFinding[];
+  persistedFindings: DriftFinding[];
 }

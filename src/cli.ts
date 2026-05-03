@@ -38,6 +38,7 @@ program
   .option('--fail-on <severity>', 'Fail on finding severities (comma-separated or repeatable)', collectSeverity, [])
   .option('--changed-only', 'Only scan git-tracked changed files')
   .option('--base-ref <ref>', 'Git base ref to diff against (used with --changed-only)')
+  .option('--since <ref>', 'Compare scan against historical git ref')
   .option('--sarif <path>', 'Write SARIF output to file')
   .option('--foundation-project <id>', 'Foundation project ID')
   .option('--foundation-token <token>', 'Foundation auth token')

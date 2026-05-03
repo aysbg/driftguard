@@ -15,6 +15,7 @@ const configSchema = z
   .object({
     spec: z.array(z.string()).optional(),
     code: z.array(z.string()).optional(),
+    since: z.string().optional(),
     plugins: z.array(z.string()).optional(),
     baseline: z.string().optional(),
     output: z.object({ json: z.string().optional() }).optional(),
@@ -44,6 +45,7 @@ export interface ScanCliOptions {
   repo?: string;
   spec?: string[];
   code?: string[];
+  since?: string;
   plugins?: string[];
   baseline?: string;
   config?: string;
@@ -102,6 +104,7 @@ export async function resolveConfig(
     code,
     configFile,
     baseline: options.baseline ?? fileConfig?.baseline,
+    since: options.since ?? fileConfig?.since,
     plugins,
     ci,
     foundation,

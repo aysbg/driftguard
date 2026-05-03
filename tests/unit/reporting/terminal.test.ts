@@ -218,4 +218,25 @@ describe('terminal reporter', () => {
     const output = renderTerminalReport(driftResultEpic4);
     expect(output).toContain('Remediation: Add route handler for GET /users/{id}');
   });
+
+  it('renders historical drift summary when historical data is present', () => {
+    const resultWithHistorical = {
+      ...driftResult,
+      historical: {
+        sinceRef: 'HEAD~2',
+        currentFindings: driftResult.findings,
+        historicalFindings: [],
+        newFindings: [driftResult.findings[0], driftResult.findings[0], driftResult.findings[0]],
+        resolvedFindings: [driftResult.findings[0]],
+        persistedFindings: [driftResult.findings[0], driftResult.findings[0]],
+      },
+    } as ScanResult;
+
+    const output = renderTerminalReport(resultWithHistorical);
+    expect(output).toContain('Historical Drift (since HEAD~2)');
+    expect(output).toContain('=================================');
+    expect(output).toContain('New:        3 findings');
+    expect(output).toContain('Resolved:   1 finding');
+    expect(output).toContain('Persisted:  2 findings');
+  });
 });
