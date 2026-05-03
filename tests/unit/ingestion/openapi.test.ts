@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { extractOpenApiOperations } from '../../../src/ingestion/openapi.js';
+import { extractDataModels, extractOpenApiOperations } from '../../../src/ingestion/openapi.js';
 
 describe('extractOpenApiOperations', () => {
   it('extracts GET users operation', () => {
@@ -150,5 +150,92 @@ paths:
         description: 'Missing',
       },
     ]);
+  });
+});
+
+describe('extractDataModels', () => {
+  it('extracts data models from components.schemas', () => {
+    const filePath = 'specs/openapi.yml';
+    const content = `openapi: 3.0.3
+info:
+  title: Test API
+  version: 1.0.0
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+`;
+
+    const models = extractDataModels(filePath, content);
+
+    expect(models).toEqual([
+      {
+        name: 'Order',
+        filePath: 'specs/openapi.yml',
+        properties: [],
+        source: 'openapi',
+      },
+      {
+        name: 'User',
+        filePath: 'specs/openapi.yml',
+        properties: [],
+        source: 'openapi',
+      },
+    ]);
+  });
+
+  it('returns empty array when no schemas defined', () => {
+    const filePath = 'specs/empty.yml';
+    const content = `openapi: 3.0.3
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      summary: List users
+`;
+
+    const models = extractDataModels(filePath, content);
+
+    expect(models).toEqual([]);
+  });
+
+  it('returns empty array for malformed documents', () => {
+    const filePath = 'specs/bad.yml';
+    const content = 'this is not yaml at all';
+
+    const models = extractDataModels(filePath, content);
+
+    expect(models).toEqual([]);
+  });
+
+  it('sorts data models deterministically by name', () => {
+    const filePath = 'specs/ordering.yml';
+    const content = `openapi: 3.0.3
+info:
+  title: Test API
+  version: 1.0.0
+components:
+  schemas:
+    Zebra:
+      type: object
+    Alpha:
+      type: object
+    Middle:
+      type: object
+`;
+
+    const models = extractDataModels(filePath, content);
+
+    expect(models.map((m) => m.name)).toEqual(['Alpha', 'Middle', 'Zebra']);
   });
 });

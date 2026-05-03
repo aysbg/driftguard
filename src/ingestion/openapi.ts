@@ -1,6 +1,6 @@
 import { parse } from 'yaml';
 
-import type { OpenApiOperation } from '../types/spec.js';
+import type { DataModel, OpenApiOperation } from '../types/spec.js';
 
 const httpMethods = ['delete', 'get', 'patch', 'post', 'put'] as const;
 
@@ -26,6 +26,9 @@ interface ParsedResponse {
 
 interface ParsedDocument {
   paths?: Record<string, Partial<Record<HttpMethod, ParsedOperation>>>;
+  components?: {
+    schemas?: Record<string, unknown>;
+  };
 }
 
 export function extractOpenApiOperations(filePath: string, content: string): OpenApiOperation[] {
@@ -79,4 +82,18 @@ export function extractOpenApiOperations(filePath: string, content: string): Ope
           } satisfies OpenApiOperation;
         });
     });
+}
+
+export function extractDataModels(filePath: string, content: string): DataModel[] {
+  const document = parse(content) as ParsedDocument;
+  const schemas = document.components?.schemas ?? {};
+
+  return Object.keys(schemas)
+    .sort((left, right) => left.localeCompare(right))
+    .map((name) => ({
+      name,
+      filePath,
+      properties: [],
+      source: 'openapi' as const,
+    }));
 }

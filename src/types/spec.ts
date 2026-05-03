@@ -36,6 +36,39 @@ export const specSectionSchema = z.object({
 });
 export type SpecSection = z.infer<typeof specSectionSchema>;
 
+export const dataModelPropertySchema = z.object({
+  name: z.string(),
+  type: z.string().optional(),
+});
+export type DataModelProperty = z.infer<typeof dataModelPropertySchema>;
+
+export const dataModelSchema = z.object({
+  name: z.string(),
+  filePath: z.string(),
+  properties: z.array(dataModelPropertySchema),
+  source: z.enum(['openapi', 'foundation', 'local']),
+});
+export type DataModel = z.infer<typeof dataModelSchema>;
+
+export const businessRuleSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string(),
+  filePath: z.string(),
+  startLine: z.number(),
+  endLine: z.number(),
+});
+export type BusinessRule = z.infer<typeof businessRuleSchema>;
+
+export const storySchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string(),
+  dependencies: z.array(z.string()),
+  filePath: z.string(),
+});
+export type Story = z.infer<typeof storySchema>;
+
 export const openApiOperationSchema = z.object({
   filePath: z.string(),
   method: z.string(),
@@ -52,6 +85,9 @@ export const specDocumentSchema = z.object({
   sections: z.array(specSectionSchema),
   operations: z.array(openApiOperationSchema),
   source: z.enum(['foundation', 'local']).optional(),
+  dataModels: z.array(dataModelSchema).optional(),
+  businessRules: z.array(businessRuleSchema).optional(),
+  stories: z.array(storySchema).optional(),
 });
 export type SpecDocument = z.infer<typeof specDocumentSchema>;
 

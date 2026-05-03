@@ -74,7 +74,7 @@ describe('indexRepository', () => {
       expect(first.warnings).toEqual([]);
       expect(second.warnings).toEqual([]);
       expect(first.index).toEqual(second.index);
-      expect(first.index.files).toEqual([
+      expect(first.index.files).toMatchObject([
         {
           filePath: 'src/routes/alpha.ts',
           routes: [

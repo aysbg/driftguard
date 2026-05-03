@@ -80,6 +80,150 @@ describe('OpenApiResponse', () => {
   });
 });
 
+describe('DataModel', () => {
+  it('passes valid data model with all fields', async () => {
+    const { dataModelSchema } = await loadSchemas();
+    const valid = {
+      name: 'User',
+      filePath: 'models/user.ts',
+      properties: [{ name: 'id', type: 'string' }, { name: 'name' }],
+      source: 'openapi',
+    };
+    const result = dataModelSchema.safeParse(valid);
+    expect(result.success).toBe(true);
+  });
+
+  it('passes valid data model with minimal fields', async () => {
+    const { dataModelSchema } = await loadSchemas();
+    const valid = {
+      name: 'User',
+      filePath: 'models/user.ts',
+      properties: [],
+      source: 'local',
+    };
+    const result = dataModelSchema.safeParse(valid);
+    expect(result.success).toBe(true);
+  });
+
+  it('passes valid data model with foundation source', async () => {
+    const { dataModelSchema } = await loadSchemas();
+    const valid = {
+      name: 'User',
+      filePath: 'models/user.ts',
+      properties: [{ name: 'id' }],
+      source: 'foundation',
+    };
+    const result = dataModelSchema.safeParse(valid);
+    expect(result.success).toBe(true);
+  });
+
+  it('fails if name is missing', async () => {
+    const { dataModelSchema } = await loadSchemas();
+    const invalid = {
+      filePath: 'models/user.ts',
+      properties: [],
+      source: 'local',
+    };
+    const result = dataModelSchema.safeParse(invalid);
+    expect(result.success).toBe(false);
+  });
+
+  it('fails if source is invalid', async () => {
+    const { dataModelSchema } = await loadSchemas();
+    const invalid = {
+      name: 'User',
+      filePath: 'models/user.ts',
+      properties: [],
+      source: 'invalid',
+    };
+    const result = dataModelSchema.safeParse(invalid);
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('BusinessRule', () => {
+  it('passes valid business rule with all fields', async () => {
+    const { businessRuleSchema } = await loadSchemas();
+    const valid = {
+      id: 'BR-001',
+      title: 'Password requirements',
+      description: 'Passwords must be at least 8 characters',
+      filePath: 'rules/auth.md',
+      startLine: 10,
+      endLine: 15,
+    };
+    const result = businessRuleSchema.safeParse(valid);
+    expect(result.success).toBe(true);
+  });
+
+  it('passes valid business rule with minimal fields', async () => {
+    const { businessRuleSchema } = await loadSchemas();
+    const valid = {
+      id: 'BR-002',
+      title: 'Valid email',
+      description: 'Must be valid email format',
+      filePath: 'rules/validation.md',
+      startLine: 1,
+      endLine: 5,
+    };
+    const result = businessRuleSchema.safeParse(valid);
+    expect(result.success).toBe(true);
+  });
+
+  it('fails if id is missing', async () => {
+    const { businessRuleSchema } = await loadSchemas();
+    const invalid = {
+      title: 'Some rule',
+      description: 'Description',
+      filePath: 'rules/test.md',
+      startLine: 1,
+      endLine: 2,
+    };
+    const result = businessRuleSchema.safeParse(invalid);
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('Story', () => {
+  it('passes valid story with all fields', async () => {
+    const { storySchema } = await loadSchemas();
+    const valid = {
+      id: 'STORY-001',
+      title: 'User registration',
+      description: 'As a new user I can register',
+      dependencies: ['BR-001', 'DM-User'],
+      filePath: 'stories/registration.md',
+    };
+    const result = storySchema.safeParse(valid);
+    expect(result.success).toBe(true);
+  });
+
+  it('passes valid story with empty dependencies', async () => {
+    const { storySchema } = await loadSchemas();
+    const valid = {
+      id: 'STORY-002',
+      title: 'Simple story',
+      description: 'A story with no dependencies',
+      dependencies: [],
+      filePath: 'stories/simple.md',
+    };
+    const result = storySchema.safeParse(valid);
+    expect(result.success).toBe(true);
+  });
+
+  it('fails if title is missing', async () => {
+    const { storySchema } = await loadSchemas();
+    const invalid = {
+      id: 'STORY-003',
+      description: 'Missing title',
+      dependencies: [],
+      filePath: 'stories/test.md',
+    };
+    const result = storySchema.safeParse(invalid);
+    expect(result.success).toBe(false);
+  });
+});
+
 describe('AdrDocument', () => {
   it('passes valid ADR document with frontmatter', async () => {
     const { adrDocumentSchema } = await loadSchemas();
