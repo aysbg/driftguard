@@ -178,4 +178,15 @@ describe('resolveConfig', () => {
 
     expect(resolvedConfig.ci).toBeUndefined();
   });
+
+  it('uses singular CLI plugin option when provided', async () => {
+    const repo = resolve(fixturesRoot, 'plugin');
+
+    const resolvedConfig = await resolveConfig({
+      repo,
+      plugin: [resolve(fixturesRoot, 'plugins/custom-rule.js')],
+    } as Parameters<typeof resolveConfig>[0]);
+
+    expect(resolvedConfig.plugins).toEqual([resolve(fixturesRoot, 'plugins/custom-rule.js')]);
+  });
 });

@@ -104,14 +104,14 @@ describe('indexRoutesInSourceFile', () => {
       expect(indexRoutesInSourceFile(sourceFile, repoRoot)).toEqual([
         {
           method: 'GET',
-          path: '/users/',
+          path: '/users',
           filePath: 'src/controllers/users.controller.ts',
           line: 5,
           snippet: '@Get()'
         },
         {
           method: 'POST',
-          path: '/users/',
+          path: '/users',
           filePath: 'src/controllers/users.controller.ts',
           line: 8,
           snippet: '@Post()'

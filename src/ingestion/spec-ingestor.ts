@@ -6,6 +6,7 @@ import { detectAdrDocuments, extractAdrDocuments } from './adr.js';
 import { extractBusinessRules } from './business-rules.js';
 import { extractMarkdownSections } from './markdown.js';
 import { extractDataModels, extractOpenApiOperations } from './openapi.js';
+import { extractStories } from './stories.js';
 import type { ResolvedConfig } from '../types/config.js';
 import type { ParseWarning, SpecDocument, UnifiedSpecIR } from '../types/spec.js';
 
@@ -31,13 +32,14 @@ export async function ingestSpecs(config: Pick<ResolvedConfig, 'repo' | 'spec'>)
 
       if (markdownExtensions.has(extension)) {
         const businessRules = extractBusinessRules(filePath, content);
+        const stories = extractStories(filePath, content);
 
         if (detectAdrDocuments(filePath, content)) {
           const adrDocuments = extractAdrDocuments(filePath, content).map((document) => ({
             ...document,
             businessRules,
             dataModels: [],
-            stories: [],
+            stories,
           }));
 
           documents.push(...adrDocuments);
@@ -50,7 +52,7 @@ export async function ingestSpecs(config: Pick<ResolvedConfig, 'repo' | 'spec'>)
           operations: [],
           businessRules,
           dataModels: [],
-          stories: [],
+          stories,
         });
         continue;
       }

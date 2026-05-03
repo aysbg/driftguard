@@ -46,6 +46,7 @@ export interface ScanCliOptions {
   spec?: string[];
   code?: string[];
   since?: string;
+  plugin?: string[];
   plugins?: string[];
   baseline?: string;
   config?: string;
@@ -96,7 +97,9 @@ export async function resolveConfig(
 
   const plugins = hasCliPaths(options.plugins)
     ? options.plugins
-    : (fileConfig?.plugins ?? undefined);
+    : hasCliPaths(options.plugin)
+      ? options.plugin
+      : (fileConfig?.plugins ?? undefined);
 
   return {
     repo,

@@ -66,6 +66,8 @@ export const storySchema = z.object({
   description: z.string(),
   dependencies: z.array(z.string()),
   filePath: z.string(),
+  startLine: z.number().optional(),
+  endLine: z.number().optional(),
 });
 export type Story = z.infer<typeof storySchema>;
 

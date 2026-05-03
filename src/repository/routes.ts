@@ -120,7 +120,8 @@ function combineNestControllerAndMethodPath(controllerPrefix: string, methodPath
   const normalizedPrefix = controllerPrefix.startsWith('/') ? controllerPrefix : `/${controllerPrefix}`;
   const prefixedWithTrailingSlash = normalizedPrefix.endsWith('/') ? normalizedPrefix : `${normalizedPrefix}/`;
   const normalizedMethodPath = methodPath.startsWith('/') ? methodPath.slice(1) : methodPath;
-  return `${prefixedWithTrailingSlash}${normalizedMethodPath}`;
+  const combinedPath = `${prefixedWithTrailingSlash}${normalizedMethodPath}`;
+  return combinedPath.length > 1 && combinedPath.endsWith('/') ? combinedPath.slice(0, -1) : combinedPath;
 }
 
 function normalizeRoutePath(routePath: string): string {
