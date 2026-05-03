@@ -1,5 +1,8 @@
 import { evaluateOpenApiRouteExists } from './openapi-route-exists.js';
 import { evaluateSectionUnmapped } from './markdown-section-unmapped.js';
+import { evaluateDataModelExists } from './data-model-exists.js';
+import { evaluateBusinessRuleReferenced } from './business-rule-referenced.js';
+import { evaluateStoryUncovered } from './story-uncovered.js';
 import { extraRouteNotInSpecId, extraRouteSeverity, exactMatchConfidence, heuristicConfidence } from './finding-conventions.js';
 import type { Mapping, MappingConfidence, DriftFinding, SectionMapping } from '../types/finding.js';
 import type { ParseWarning, UnifiedSpecIR } from '../types/spec.js';
@@ -37,7 +40,22 @@ export function runRuleEngine(input: {
       reason: 'extra route in code not documented in spec',
     },
   }));
-  const findings = [...routeFindings, ...sectionFindings, ...surplusRouteFindings].sort((left, right) =>
+  const dataModels = input.spec.documents.flatMap((document) => document.dataModels ?? []);
+  const businessRules = input.spec.documents.flatMap((document) => document.businessRules ?? []);
+  const stories = input.spec.documents.flatMap((document) => document.stories ?? []);
+  const codeModels = input.repository.index.files.flatMap((file) => [...file.models ?? [], ...file.types ?? []]);
+
+  const dataModelFindings = evaluateDataModelExists(dataModels, codeModels);
+  const businessRuleFindings = evaluateBusinessRuleReferenced(businessRules, input.repository.index);
+  const intermediateFindings = [
+    ...routeFindings,
+    ...sectionFindings,
+    ...surplusRouteFindings,
+    ...dataModelFindings,
+    ...businessRuleFindings,
+  ];
+  const storyFindings = evaluateStoryUncovered(stories, intermediateFindings);
+  const findings = [...intermediateFindings, ...storyFindings].sort((left, right) =>
     left.id.localeCompare(right.id)
   );
 
