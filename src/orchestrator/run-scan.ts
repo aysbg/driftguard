@@ -6,6 +6,7 @@ import type { UnifiedSpecIR } from '../types/spec.js';
 import type { RepositoryIndexResult } from '../repository/indexer.js';
 import type { RuleEngineResult } from '../rules/engine.js';
 import type { SectionMapping } from '../types/finding.js';
+import { loadPlugins, executePlugins } from '../rules/plugin-loader.js';
 
 export async function runScan(input: ScanInput): Promise<ScanResult> {
   const { indexRepository } = await import('../repository/indexer.js');
@@ -39,15 +40,33 @@ export async function runScan(input: ScanInput): Promise<ScanResult> {
     mappingResult,
     sectionMappings: sectionMappings.length > 0 ? sectionMappings : undefined,
   });
-  const status = engine.findings.length > 0 ? 'drift_found' : 'ok';
+
+  let findings = engine.findings;
+  let warnings = [...engine.warnings];
+
+  if (input.plugins && input.plugins.length > 0) {
+    const { plugins, warnings: pluginWarnings } = await loadPlugins(input.plugins);
+    warnings.push(...pluginWarnings);
+
+    const pluginFindings = await executePlugins(plugins, {
+      spec,
+      repository: repositoryResult.index,
+      mappings: engine.mappings,
+    });
+
+    findings = [...findings, ...pluginFindings];
+  }
+
+  findings = findings.sort((a, b) => a.id.localeCompare(b.id));
+  warnings = warnings.sort((a, b) => a.filePath.localeCompare(b.filePath) || a.message.localeCompare(b.message));
+
+  const status = findings.length > 0 ? 'drift_found' : 'ok';
 
   return {
     status,
-    totalFindings: engine.findings.length,
-    findings: [...engine.findings].sort((a, b) => a.id.localeCompare(b.id)),
-    warnings: [...engine.warnings].sort(
-      (a, b) => a.filePath.localeCompare(b.filePath) || a.message.localeCompare(b.message),
-    ),
+    totalFindings: findings.length,
+    findings,
+    warnings,
     config: input,
   };
 }
