@@ -40,7 +40,7 @@ program
   .option('--base-ref <ref>', 'Git base ref to diff against (used with --changed-only)')
   .option('--since <ref>', 'Compare scan against historical git ref')
   .option('--sarif <path>', 'Write SARIF output to file')
-  .option('--foundation-project <id>', 'Foundation project ID')
+  .option('--foundation-mcp <id>', 'Foundation project ID')
   .option('--foundation-token <token>', 'Foundation auth token')
   .option('--foundation-url <url>', 'Foundation API URL')
   .option('--write-back', 'Enable write-back to Foundation')

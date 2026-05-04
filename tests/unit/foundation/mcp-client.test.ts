@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { FoundationMcpClientImpl } from '../../../src/foundation/mcp-client.js';
-import { DriftGuardError, ExitCode } from '../../../src/errors.js';
+import { DriftGuardError } from '../../../src/errors.js';
 
 const mockConnect = vi.fn();
 const mockClose = vi.fn();
@@ -175,7 +175,30 @@ describe('FoundationMcpClientImpl', () => {
   });
 
   describe('fetchSpecs', () => {
-    it('calls foundation_fetch with correct sections and returns parsed specs', async () => {
+    it('calls foundation_fetch with provided sections and returns parsed specs', async () => {
+      const specs = [
+        { id: 's-1', content: 'hi', format: 'openapi', version: '1.0' },
+      ];
+
+      mockConnect.mockResolvedValue(undefined);
+      mockListTools.mockResolvedValue({ tools: [{ name: 'foundation_fetch' }] });
+      mockCallTool.mockResolvedValue({
+        structuredContent: specs,
+      });
+
+      await client.connect('test-token');
+      const result = await client.fetchSpecs('proj-1', 'epics,project_specifics');
+      expect(result).toEqual(specs);
+      expect(mockCallTool).toHaveBeenCalledWith({
+        name: 'foundation_fetch',
+        arguments: {
+          projectId: 'proj-1',
+          sections: 'epics,project_specifics',
+        },
+      });
+    });
+
+    it('calls foundation_fetch without sections when not provided', async () => {
       const specs = [
         { id: 's-1', content: 'hi', format: 'openapi', version: '1.0' },
       ];
@@ -193,9 +216,43 @@ describe('FoundationMcpClientImpl', () => {
         name: 'foundation_fetch',
         arguments: {
           projectId: 'proj-1',
-          sections: 'epics,project_specifics,tech_stack_decisions',
         },
       });
+    });
+  });
+
+  describe('fetchMenu', () => {
+    it('calls foundation_menu and returns parsed string array', async () => {
+      mockConnect.mockResolvedValue(undefined);
+      mockListTools.mockResolvedValue({ tools: [{ name: 'foundation_menu' }] });
+      mockCallTool.mockResolvedValue({
+        structuredContent: ['epics', 'project_specifics', 'background'],
+      });
+
+      await client.connect('test-token');
+      const result = await client.fetchMenu();
+      expect(result).toEqual(['epics', 'project_specifics', 'background']);
+      expect(mockCallTool).toHaveBeenCalledWith({
+        name: 'foundation_menu',
+        arguments: {},
+      });
+    });
+
+    it('throws DriftGuardError when not connected', async () => {
+      await expect(client.fetchMenu()).rejects.toThrow(
+        /Foundation MCP server connection failed/,
+      );
+    });
+
+    it('throws DriftGuardError when MCP call fails', async () => {
+      mockConnect.mockResolvedValue(undefined);
+      mockListTools.mockResolvedValue({ tools: [{ name: 'foundation_menu' }] });
+      mockCallTool.mockRejectedValue(new Error('transport closed'));
+
+      await client.connect('test-token');
+      await expect(client.fetchMenu()).rejects.toThrow(
+        /Foundation tool error/,
+      );
     });
   });
 

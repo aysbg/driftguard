@@ -10,6 +10,7 @@ function createMockClient(specs: FoundationSpec[]): FoundationMcpClient {
     listProjects: vi.fn().mockResolvedValue([
       { id: 'test-project', name: 'Test Project', slug: 'test' },
     ] satisfies FoundationProject[]),
+    fetchMenu: vi.fn().mockResolvedValue(['epics', 'project_specifics']),
     fetchSpecs: vi.fn().mockResolvedValue(specs),
     postDeviationReport: vi.fn().mockResolvedValue(undefined),
   };
@@ -49,7 +50,8 @@ describe('fetchFoundationSpecs', () => {
     const result = await fetchFoundationSpecs(client, 'proj-1');
 
     expect(client.listProjects).toHaveBeenCalled();
-    expect(client.fetchSpecs).toHaveBeenCalledWith('proj-1');
+    expect(client.fetchMenu).toHaveBeenCalled();
+    expect(client.fetchSpecs).toHaveBeenCalledWith('proj-1', 'epics,project_specifics');
     expect(result.documents).toHaveLength(1);
     expect(result.documents[0]?.source).toBe('foundation');
     expect(result.documents[0]?.operations.length).toBeGreaterThan(0);
@@ -61,7 +63,8 @@ describe('fetchFoundationSpecs', () => {
     const result = await fetchFoundationSpecs(client, 'proj-empty');
 
     expect(client.listProjects).toHaveBeenCalled();
-    expect(client.fetchSpecs).toHaveBeenCalledWith('proj-empty');
+    expect(client.fetchMenu).toHaveBeenCalled();
+    expect(client.fetchSpecs).toHaveBeenCalledWith('proj-empty', 'epics,project_specifics');
     expect(result.documents).toEqual([]);
     expect(result.parseWarnings).toHaveLength(1);
     expect(result.parseWarnings[0]?.message).toContain('no specs');
@@ -117,5 +120,26 @@ describe('fetchFoundationSpecs', () => {
 
     expect(result.documents).toEqual([]);
     expect(result.parseWarnings.length).toBeGreaterThan(0);
+  });
+
+  it('returns warning and skips fetch when menu is empty', async () => {
+    const client = createMockClient([]);
+    vi.mocked(client.fetchMenu).mockResolvedValueOnce([]);
+
+    const result = await fetchFoundationSpecs(client, 'proj-empty-menu');
+
+    expect(client.listProjects).toHaveBeenCalled();
+    expect(client.fetchMenu).toHaveBeenCalled();
+    expect(client.fetchSpecs).not.toHaveBeenCalled();
+    expect(result.documents).toEqual([]);
+    expect(result.parseWarnings).toHaveLength(1);
+    expect(result.parseWarnings[0]?.message).toContain('no spec sections');
+  });
+
+  it('propagates error when fetchMenu fails', async () => {
+    const client = createMockClient([]);
+    vi.mocked(client.fetchMenu).mockRejectedValueOnce(new Error('Menu unavailable'));
+
+    await expect(fetchFoundationSpecs(client, 'proj-fail')).rejects.toThrow('Menu unavailable');
   });
 });

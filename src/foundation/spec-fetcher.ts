@@ -24,8 +24,19 @@ export async function fetchFoundationSpecs(
   // Verify access by listing projects first
   await client.listProjects();
 
-  const specs = await client.fetchSpecs(projectId);
+  const menu = await client.fetchMenu();
+
   const parseWarnings: UnifiedSpecIR['parseWarnings'] = [];
+  if (menu.length === 0) {
+    parseWarnings.push({
+      filePath: 'foundation://' + projectId,
+      message: 'Foundation returned no spec sections for project ' + projectId,
+    });
+    return { documents: [], parseWarnings };
+  }
+
+  const sections = menu.join(',');
+  const specs = await client.fetchSpecs(projectId, sections);
   if (specs.length === 0) {
     parseWarnings.push({ filePath: 'foundation://' + projectId, message: 'Foundation returned no specs for project ' + projectId });
     return { documents: [], parseWarnings };

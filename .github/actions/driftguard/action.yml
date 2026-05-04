@@ -1,0 +1,133 @@
+name: 'DriftGuard'
+description: 'Scan for spec-to-code drift using DriftGuard'
+author: 'DriftGuard'
+
+inputs:
+  spec:
+    description: 'Spec directory or files (repeatable with commas)'
+    type: string
+    required: false
+    default: 'docs'
+  code:
+    description: 'Code directory or files (repeatable with commas)'
+    type: string
+    required: false
+    default: 'src'
+  fail-on:
+    description: 'Severity levels to fail on (comma-separated)'
+    type: string
+    required: false
+    default: 'high'
+  sarif:
+    description: 'Path to write SARIF output file'
+    type: string
+    required: false
+  baseline:
+    description: 'Path to baseline file for comparison'
+    type: string
+    required: false
+  foundation-mcp:
+    description: 'Foundation MCP connection string (projectId value)'
+    type: string
+    required: false
+  foundation-token:
+    description: 'Foundation API token'
+    type: string
+    required: false
+    mask-input: true
+  foundation-url:
+    description: 'Foundation API URL (optional)'
+    type: string
+    required: false
+  changed-only:
+    description: 'Only scan changed files'
+    type: boolean
+    required: false
+    default: false
+  base-ref:
+    description: 'Git base ref to diff against for changed-only scans'
+    type: string
+    required: false
+    default: 'origin/main'
+  node-version:
+    description: 'Node.js version to use'
+    type: string
+    required: false
+    default: '22'
+  install-command:
+    description: 'Command to install driftguard'
+    type: string
+    required: false
+    default: 'npm install -g driftguard || npm install driftguard'
+
+outputs:
+  exit-code:
+    description: 'Exit code from driftguard scan'
+    value: ${{ steps.scan.outputs.exit-code }}
+  sarif-path:
+    description: 'Path to the SARIF file if generated'
+    value: ${{ steps.scan.outputs.sarif-path }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Install driftguard
+      shell: bash
+      run: ${{ inputs.install-command }}
+
+    - name: Run DriftGuard scan
+      id: scan
+      shell: bash
+      continue-on-error: true
+      run: |
+        ARGS="--repo . --ci"
+
+        IFS=',' read -ra SPEC_PARTS <<< "${{ inputs.spec }}"
+        for s in "${SPEC_PARTS[@]}"; do ARGS="$ARGS --spec $s"; done
+
+        IFS=',' read -ra CODE_PARTS <<< "${{ inputs.code }}"
+        for c in "${CODE_PARTS[@]}"; do ARGS="$ARGS --code $c"; done
+
+        ARGS="$ARGS --fail-on ${{ inputs.fail-on }}"
+
+        if [ "${{ inputs.changed-only }}" = "true" ]; then
+          ARGS="$ARGS --changed-only --base-ref ${{ inputs.base-ref }}"
+        fi
+
+        if [ -n "${{ inputs.sarif }}" ]; then
+          ARGS="$ARGS --sarif ${{ inputs.sarif }}"
+        fi
+
+        if [ -n "${{ inputs.baseline }}" ]; then
+          ARGS="$ARGS --baseline ${{ inputs.baseline }}"
+        fi
+
+        if [ -n "${{ inputs.foundation-mcp }}" ]; then
+          ARGS="$ARGS --foundation-mcp ${{ inputs.foundation-mcp }}"
+        fi
+
+        if [ -n "${{ inputs.foundation-token }}" ]; then
+          ARGS="$ARGS --foundation-token ${{ inputs.foundation-token }}"
+        fi
+
+        if [ -n "${{ inputs.foundation-url }}" ]; then
+          ARGS="$ARGS --foundation-url ${{ inputs.foundation-url }}"
+        fi
+
+        set +e
+        driftguard scan $ARGS
+        EXIT=$?
+        set -e
+
+        echo "exit-code=$EXIT" >> "$GITHUB_OUTPUT"
+
+        if [ -n "${{ inputs.sarif }}" ]; then
+          echo "sarif-path=${{ inputs.sarif }}" >> "$GITHUB_OUTPUT"
+        fi
+
+        exit $EXIT

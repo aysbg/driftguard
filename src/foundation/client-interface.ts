@@ -7,8 +7,9 @@ import type {
 export interface FoundationMcpClient {
   connect(token: string, apiUrl?: string): Promise<void>;
   disconnect(): Promise<void>;
+  fetchMenu(): Promise<string[]>;
   listProjects(): Promise<FoundationProject[]>;
-  fetchSpecs(projectId: string): Promise<FoundationSpec[]>;
+  fetchSpecs(projectId: string, sections?: string): Promise<FoundationSpec[]>;
   postDeviationReport(
     projectId: string,
     reports: FoundationDeviationReport[],

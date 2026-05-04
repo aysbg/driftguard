@@ -91,6 +91,19 @@ export class FoundationMcpClientImpl implements FoundationMcpClient {
     await this.cleanup();
   }
 
+  async fetchMenu(): Promise<string[]> {
+    this.ensureConnected();
+    try {
+      const result = await this.client!.callTool({
+        name: 'foundation_menu',
+        arguments: {},
+      });
+      return this.parseToolResult<string[]>(result, 'foundation_menu');
+    } catch (error) {
+      throw this.wrapToolError(error, 'fetchMenu');
+    }
+  }
+
   async listProjects(): Promise<FoundationProject[]> {
     this.ensureConnected();
     try {
@@ -104,14 +117,14 @@ export class FoundationMcpClientImpl implements FoundationMcpClient {
     }
   }
 
-  async fetchSpecs(projectId: string): Promise<FoundationSpec[]> {
+  async fetchSpecs(projectId: string, sections?: string): Promise<FoundationSpec[]> {
     this.ensureConnected();
     try {
       const result = await this.client!.callTool({
         name: 'foundation_fetch',
         arguments: {
           projectId,
-          sections: 'epics,project_specifics,tech_stack_decisions',
+          sections,
         },
       });
       return this.parseToolResult<FoundationSpec[]>(result, 'foundation_fetch');

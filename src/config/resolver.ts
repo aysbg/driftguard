@@ -116,13 +116,13 @@ export async function resolveConfig(
 
 function parseFoundationConfig(
   fileConfig: z.infer<typeof configSchema>['foundation'],
-  options: ScanCliOptions & { foundationProject?: string; foundationToken?: string; foundationUrl?: string; writeBack?: boolean },
+  options: ScanCliOptions & { foundationMcp?: string; foundationToken?: string; foundationUrl?: string; writeBack?: boolean },
 ): ResolvedConfig['foundation'] {
   const base = fileConfig ?? {};
-  const cliEnabled = options.foundationProject !== undefined || options.foundationToken !== undefined;
+  const cliEnabled = options.foundationMcp !== undefined || options.foundationToken !== undefined;
   const enabled = cliEnabled ? true : base.enabled;
   const apiUrl = options.foundationUrl ?? base.apiUrl;
-  const projectId = options.foundationProject ?? base.projectId;
+  const projectId = options.foundationMcp ?? base.projectId;
   const authToken = options.foundationToken ?? base.authToken;
   const writeBack = options.writeBack ?? base.writeBack;
 

@@ -30,7 +30,7 @@ export interface ScanCommandOptions extends ScanCliOptions {
   baseRef?: string;
   since?: string;
   sarif?: string;
-  foundationProject?: string;
+  foundationMcp?: string;
   foundationToken?: string;
   foundationUrl?: string;
   writeBack?: boolean;
