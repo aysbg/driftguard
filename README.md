@@ -1,8 +1,10 @@
 # DriftGuard
 
-A local-first CLI for detecting spec-to-code drift. Compare OpenAPI and Markdown specs against your TypeScript or JavaScript codebase to find missing routes, unimplemented data models, unreferenced business rules, uncovered story dependencies, and surplus code that is not documented.
-
-DriftGuard runs entirely offline. No network calls, no remote services, no LLM matching. It is deterministic and designed to run in CI or locally.
+> **Your PRD is a test. DriftGuard runs it.**
+>
+> DriftGuard scans your OpenAPI specs and Markdown PRDs against your TypeScript codebase, then tells you exactly where your code has drifted from your design.
+>
+> Entirely offline. Deterministic. No LLMs.
 
 ## Install
 
@@ -38,16 +40,73 @@ Scan using a config file:
 npx driftguard scan --repo . --config .driftguard.yml --json
 ```
 
-Load a custom rule plugin:
+Scan against a Foundation project (pulls specs dynamically via MCP):
 
 ```bash
-npx driftguard scan --repo . --plugin ./custom-rule.js
+npx driftguard scan --repo . --foundation-mcp my-project-id --foundation-token $FOUNDATION_TOKEN --json
 ```
 
 Compare against a historical git ref:
 
 ```bash
 npx driftguard scan --repo . --since HEAD~5 --json
+```
+
+## GitHub Actions
+
+Add DriftGuard to your workflow with the composite action included in this repository:
+
+```yaml
+name: DriftGuard
+on: [push, pull_request]
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/driftguard
+        id: driftguard
+        with:
+          spec: docs
+          code: src
+          fail-on: high
+          # Optional: save a baseline first with `driftguard baseline save --name default`
+          # baseline: default
+          # Optional: pull specs from Foundation
+          # foundation-mcp: my-project-id
+          # foundation-token: ${{ secrets.FOUNDATION_TOKEN }}
+      - uses: github/codeql-action/upload-sarif@v3
+        if: steps.driftguard.outputs.sarif-path != ''
+        with:
+          sarif_file: ${{ steps.driftguard.outputs.sarif-path }}
+```
+
+See `.github/actions/driftguard/README.md` for full input/output reference.
+
+## Foundation MCP Spec Adapter
+
+Instead of pointing at local spec files, DriftGuard can pull specs directly from a Foundation project via the `foundationworks-mcp` server.
+
+```bash
+npx driftguard scan --repo . --foundation-mcp my-project-id --foundation-token $FOUNDATION_TOKEN --json
+```
+
+**How it works:**
+1. Connects to `foundationworks-mcp` using the provided token
+2. Calls `foundation_menu` to discover available spec sections (epics, user stories, API design, etc.)
+3. Calls `foundation_fetch` with those sections to pull the actual specs
+4. Hydrates the Unified Spec IR from Foundation documents
+5. Validates against your code as usual
+
+**Configuration via `.driftguard.yml`:**
+
+```yaml
+foundation:
+  enabled: true
+  projectId: my-project-id
+  authToken: ${FOUNDATION_TOKEN}
+  writeBack: true  # sync deviation reports back to Foundation
 ```
 
 ## Configuration
@@ -288,11 +347,11 @@ The current release does not:
 - Compare request or response schemas at the property level
 - Validate authentication or permissions
 - Detect semantic drift or business logic changes
-- Sync with a hosted Foundation service
-- Run as a CI gate or pre-commit hook
 - Host a UI or generate PDF/HTML reports
 
 These features are planned for future releases.
+
+*Note: Foundation sync via MCP, CI integration, and pre-commit hooks are now supported. See [GitHub Actions](#github-actions) and [Foundation MCP](#foundation-mcp-spec-adapter).
 
 ## Development
 
